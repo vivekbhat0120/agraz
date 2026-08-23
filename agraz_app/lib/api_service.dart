@@ -1,6 +1,7 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_token.dart';
@@ -13,9 +14,9 @@ class ApiService {
     try {
       final jsonData = data.toJson();
 
-      print('=== DATA SENDING TO BACKEND ===');
-      print('URL: $BASE_URL/api/income_expense');
-      print(jsonEncode(jsonData));
+      debugPrint('=== DATA SENDING TO BACKEND ===');
+      debugPrint('URL: $BASE_URL/api/income_expense');
+      debugPrint(jsonEncode(jsonData));
 
       final headers = await authJsonHeaders();
       final response = await offline.post(
@@ -25,10 +26,10 @@ class ApiService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print('Transaction submitted successfully');
+        debugPrint('Transaction submitted successfully');
         return true;
       } else {
-        print('API Error: ${response.statusCode} - ${response.body}');
+        debugPrint('API Error: ${response.statusCode} - ${response.body}');
         String msg = 'Failed to submit transaction (${response.statusCode})';
         try {
           final err = jsonDecode(response.body);
@@ -41,7 +42,7 @@ class ApiService {
         throw Exception(msg);
       }
     } catch (e) {
-      print('Error submitting transaction: $e');
+      debugPrint('Error submitting transaction: $e');
       rethrow;
     }
   }
@@ -77,7 +78,7 @@ class ApiService {
       );
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
-      print('Error deleting transaction: $e');
+      debugPrint('Error deleting transaction: $e');
       return false;
     }
   }
@@ -103,7 +104,7 @@ class ApiService {
 
   Future<Map<String, dynamic>?> fetchUserByMobile(String mobile) async {
     try {
-      print('Fetching user details for mobile: $mobile');
+      debugPrint('Fetching user details for mobile: $mobile');
       final headers = await authGetHeaders();
       final response = await offline.get(
         Uri.parse('$BASE_URL/api/income_expense/mobile/$mobile'),
@@ -112,17 +113,17 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final userData = jsonDecode(response.body);
-        print('Fetched user data: $userData');
+        debugPrint('Fetched user data: $userData');
         // Assuming the response is the direct user object, not wrapped in 'data'
         return userData;
       } else {
-        print(
+        debugPrint(
           'Failed to fetch user: ${response.statusCode} - ${response.body}',
         );
         return null;
       }
     } catch (e) {
-      print('Error fetching user: $e');
+      debugPrint('Error fetching user: $e');
       rethrow;
     }
   }
@@ -137,15 +138,15 @@ class ApiService {
     String? remarks,
   }) async {
     try {
-      print('📡 Making API request to: $BASE_URL/api/register-business');
-      print('📦 Request data:');
-      print('  - mobile: $mobile');
-      print('  - name: $name');
-      print('  - main_category: $mainCategory');
-      print('  - sub_category: $subCategory');
-      print('  - business_name: $businessName');
-      print('  - email: $email');
-      print('  - remarks: $remarks');
+      debugPrint('ðŸ“¡ Making API request to: $BASE_URL/api/register-business');
+      debugPrint('ðŸ“¦ Request data:');
+      debugPrint('  - mobile: $mobile');
+      debugPrint('  - name: $name');
+      debugPrint('  - main_category: $mainCategory');
+      debugPrint('  - sub_category: $subCategory');
+      debugPrint('  - business_name: $businessName');
+      debugPrint('  - email: $email');
+      debugPrint('  - remarks: $remarks');
 
       final headers = await authJsonHeaders();
       final response = await offline.post(
@@ -162,14 +163,14 @@ class ApiService {
         }),
       );
 
-      print('📥 Response status code: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
+      debugPrint('ðŸ“¥ Response status code: ${response.statusCode}');
+      debugPrint('ðŸ“¥ Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         try {
           final responseData =
               jsonDecode(response.body) as Map<String, dynamic>;
-          print('✅ Parsed response: $responseData');
+          debugPrint('âœ… Parsed response: $responseData');
 
           // Add success flag if not present
           final bool isSuccess =
@@ -195,7 +196,7 @@ class ApiService {
           };
         } catch (e) {
           // If JSON parsing fails but status is 200
-          print('⚠️ Could not parse JSON response, but status is 200');
+          debugPrint('âš ï¸ Could not parse JSON response, but status is 200');
           return {
             'success': true,
             'message': 'Service registered successfully!',
@@ -222,11 +223,11 @@ class ApiService {
                   : errorResponse['message'];
         }
 
-        print('❌ Error response: $errorResponse');
+        debugPrint('âŒ Error response: $errorResponse');
         return errorResponse;
       }
     } on SocketException catch (e) {
-      print('🔌 Socket error: $e');
+      debugPrint('ðŸ”Œ Socket error: $e');
       return {
         'success': false,
         'message':
@@ -234,21 +235,21 @@ class ApiService {
         'error': e.toString(),
       };
     } on TimeoutException catch (e) {
-      print('⏱️ Request timeout: $e');
+      debugPrint('â±ï¸ Request timeout: $e');
       return {
         'success': false,
         'message': 'Request timeout. The server might be slow or unresponsive.',
         'error': e.toString(),
       };
     } on FormatException catch (e) {
-      print('📄 JSON format error: $e');
+      debugPrint('ðŸ“„ JSON format error: $e');
       return {
         'success': false,
         'message': 'Invalid response from server',
         'error': e.toString(),
       };
     } on http.ClientException catch (e) {
-      print('🌐 Network error: $e');
+      debugPrint('ðŸŒ Network error: $e');
       return {
         'success': false,
         'message':
@@ -256,8 +257,8 @@ class ApiService {
         'error': e.toString(),
       };
     } catch (e, stackTrace) {
-      print('❌ Unexpected error in submitServiceRegistration: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('âŒ Unexpected error in submitServiceRegistration: $e');
+      debugPrint('Stack trace: $stackTrace');
       return {
         'success': false,
         'message': 'Failed to register business: $e',
@@ -387,7 +388,7 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print('Error fetching labors: $e');
+      debugPrint('Error fetching labors: $e');
       return [];
     }
   }
@@ -415,7 +416,7 @@ class ApiService {
       if (decoded is Map) return Map<String, dynamic>.from(decoded);
       return null;
     } catch (e) {
-      print('Error fetching labor balance: $e');
+      debugPrint('Error fetching labor balance: $e');
       return null;
     }
   }
@@ -484,7 +485,7 @@ class ApiService {
       );
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
-      print('Error deleting labor: $e');
+      debugPrint('Error deleting labor: $e');
       return false;
     }
   }
@@ -562,7 +563,7 @@ class ApiService {
       if (decoded is Map) return Map<String, dynamic>.from(decoded);
       return null;
     } catch (e) {
-      print('Error fetching party balance: $e');
+      debugPrint('Error fetching party balance: $e');
       return null;
     }
   }
@@ -600,7 +601,7 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print('Error searching users by name: $e');
+      debugPrint('Error searching users by name: $e');
       return [];
     }
   }
@@ -634,13 +635,13 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print('Error fetching labor rates: $e');
+      debugPrint('Error fetching labor rates: $e');
       return [];
     }
   }
 
   /// Saves category rates for a labourer identified by [mobile] and/or
-  /// [name] — at least one of the two must be provided.
+  /// [name] â€” at least one of the two must be provided.
   Future<bool> saveLaborRates({
     String? mobile,
     String? name,
@@ -662,12 +663,12 @@ class ApiService {
       );
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
-      print('Error saving labor rates: $e');
+      debugPrint('Error saving labor rates: $e');
       return false;
     }
   }
 
-  /// PUT /api/labors/bulk-rate — update wage on payable/opening rows in a date range.
+  /// PUT /api/labors/bulk-rate â€” update wage on payable/opening rows in a date range.
   Future<Map<String, dynamic>> bulkUpdateLaborRate({
     required String name,
     String? mobile,
@@ -699,7 +700,7 @@ class ApiService {
     );
   }
 
-  // ── Diary labels ──────────────────────────────────────────────────────────
+  // â”€â”€ Diary labels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<Map<String, dynamic>> fetchDiaryLabels() async {
     try {
@@ -825,7 +826,7 @@ class ApiService {
     }
   }
 
-  // ── Diary list items (reusable checklist catalog) ─────────────────────────
+  // â”€â”€ Diary list items (reusable checklist catalog) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   static const _listCatalogPrefsKey = 'diary_list_catalog_v1';
   static const _listItemApiPaths = [
@@ -1081,7 +1082,7 @@ class ApiService {
     }
   }
 
-  // ── Diary entries ─────────────────────────────────────────────────────────
+  // â”€â”€ Diary entries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<Map<String, dynamic>> fetchDiaryEntries({
     String? from,
@@ -1219,7 +1220,7 @@ class ApiService {
     }
   }
 
-  // ── Future plans ──────────────────────────────────────────────────────────
+  // â”€â”€ Future plans â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<List<Map<String, dynamic>>> fetchFuturePlans({
     int? year,
@@ -1318,7 +1319,7 @@ class ApiService {
     }
   }
 
-  // ── Labor works (self receivable / receipt) ───────────────────────────────
+  // â”€â”€ Labor works (self receivable / receipt) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<Map<String, dynamic>> createLaborWork(Map<String, dynamic> data) async {
     final headers = await authJsonHeaders();
@@ -1467,7 +1468,7 @@ class ApiService {
     throw Exception('Invalid labor work report response');
   }
 
-  // ── Labor share confirmations (farmer → labourer reverse entry) ───────────
+  // â”€â”€ Labor share confirmations (farmer â†’ labourer reverse entry) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<int> fetchLaborSharePendingCount() async {
     final headers = await authGetHeaders();
@@ -1594,7 +1595,7 @@ class ApiService {
     );
   }
 
-  /// GET /api/feedbacks — current user's feedbacks.
+  /// GET /api/feedbacks â€” current user's feedbacks.
   Future<List<Map<String, dynamic>>> fetchMyFeedbacks({
     int page = 1,
     int limit = 50,
@@ -1945,7 +1946,7 @@ class ApiService {
     );
   }
 
-  /// Multipart upload field "file" → { url: "/uploads/land-rtcs/..." }
+  /// Multipart upload field "file" â†’ { url: "/uploads/land-rtcs/..." }
   Future<String> uploadLandRtcDocument({
     required String filePath,
     String? filename,
@@ -1977,7 +1978,7 @@ class ApiService {
     );
   }
 
-  // ── Dairy (milk ledger) ───────────────────────────────────────────────────
+  // â”€â”€ Dairy (milk ledger) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<Map<String, dynamic>> fetchDairySummary({
     String? from,
@@ -2215,7 +2216,7 @@ class ApiService {
     throw Exception(_apiErrorMessage(decoded, response.statusCode, fallback: fallback));
   }
 
-  // ── Personal documents (folders + multi-image papers) ─────────────────────
+  // â”€â”€ Personal documents (folders + multi-image papers) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<Map<String, dynamic>> browseDocuments({int? folderId, String? q}) async {
     final headers = await authGetHeaders();
@@ -2361,7 +2362,7 @@ class ApiService {
     return all;
   }
 
-  // ── Event manage (birthdays, renewals) ────────────────────────────────────
+  // â”€â”€ Event manage (birthdays, renewals) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<List<Map<String, dynamic>>> fetchManagedEvents({String? q}) async {
     final headers = await authGetHeaders();

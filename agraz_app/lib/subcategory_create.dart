@@ -55,6 +55,7 @@ class _SubcategoryManagementPageState extends State<SubcategoryManagementPage> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error loading categories: $e')));
@@ -79,6 +80,7 @@ class _SubcategoryManagementPageState extends State<SubcategoryManagementPage> {
         throw Exception('Failed to load subcategories');
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => isLoading = false);
       ScaffoldMessenger.of(
         context,
@@ -108,6 +110,7 @@ class _SubcategoryManagementPageState extends State<SubcategoryManagementPage> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => isLoading = false);
       ScaffoldMessenger.of(
         context,
@@ -147,6 +150,7 @@ class _SubcategoryManagementPageState extends State<SubcategoryManagementPage> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         _resetForm();
         _fetchSubcategories();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -158,6 +162,7 @@ class _SubcategoryManagementPageState extends State<SubcategoryManagementPage> {
         throw Exception('Failed to save subcategory');
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -171,11 +176,13 @@ class _SubcategoryManagementPageState extends State<SubcategoryManagementPage> {
       );
       if (response.statusCode == 200) {
         _fetchSubcategories();
+        if (!mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(tr('Deleted successfully'))));
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));

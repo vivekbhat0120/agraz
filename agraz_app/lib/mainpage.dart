@@ -35,6 +35,9 @@ import 'l10n/locale_controller.dart';
 import 'app_update.dart';
 import 'api_service.dart';
 import 'account_session.dart';
+import 'getting_started_page.dart';
+import 'faq_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'family_members_page.dart';
 import 'offline_sync.dart';
 
@@ -2147,6 +2150,10 @@ class _MainPageState extends State<MainPage> {
                     tr('Getting Started'),
                     tr('Learn how to use AgRaz'),
                     AppColors.info,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _openModule(const GettingStartedPage());
+                    },
                   ),
                   SizedBox(height: 8),
                   _buildHelpItem(
@@ -2154,6 +2161,7 @@ class _MainPageState extends State<MainPage> {
                     tr('Contact Support'),
                     tr('Reach out to our team'),
                     AppColors.warning,
+                    onTap: () => _contactSupport(ctx),
                   ),
                   SizedBox(height: 8),
                   _buildHelpItem(
@@ -2161,6 +2169,10 @@ class _MainPageState extends State<MainPage> {
                     tr('FAQ'),
                     tr('Frequently asked questions'),
                     AppColors.accent,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _openModule(const FaqPage());
+                    },
                   ),
                   SizedBox(height: 8),
                   _buildHelpItem(
@@ -2168,6 +2180,13 @@ class _MainPageState extends State<MainPage> {
                     tr('Send Feedback'),
                     tr('Help us improve'),
                     AppColors.primary,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _openModule(
+                        const FeedbackPage(initialMenu: 'home'),
+                        feature: AppFeatureCatalog.feedback,
+                      );
+                    },
                   ),
                   SizedBox(height: 18),
                   PrimaryButton(
@@ -2187,44 +2206,81 @@ class _MainPageState extends State<MainPage> {
     IconData icon,
     String title,
     String subtitle,
-    Color color,
-  ) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          TintedIcon(icon: icon, color: color, boxSize: 40, size: 20, radius: 12),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                    color: color,
+    Color color, {
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            TintedIcon(icon: icon, color: color, boxSize: 40, size: 20, radius: 12),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                    ),
                   ),
-                ),
-                SizedBox(height: 2),
-                Text(subtitle, style: AppText.small),
-              ],
+                  SizedBox(height: 2),
+                  Text(subtitle, style: AppText.small),
+                ],
+              ),
             ),
-          ),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: AppColors.textMuted,
-            size: 18,
-          ),
-        ],
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textMuted,
+              size: 18,
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  Future<void> _contactSupport(BuildContext ctx) async {
+    Navigator.pop(ctx);
+    final uri = Uri(
+      scheme: 'mailto',
+      path: 'agraz.solutions@gmail.com',
+      query: _encodeQueryParameters(<String, String>{
+        'subject': 'AgRaz Support Request',
+      }),
+    );
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          SnackBar(content: Text(tr('Could not open email app'))),
+        );
+      }
+    } catch (_) {
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          SnackBar(content: Text(tr('Could not open email app'))),
+        );
+      }
+    }
+  }
+
+  String? _encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
   }
 
   void _showServiceDetailModal(BuildContext context, _ServiceFeature service) {

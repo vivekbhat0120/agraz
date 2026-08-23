@@ -76,7 +76,7 @@ class _UpdateLabourRatePageState extends State<UpdateLabourRatePage> {
   }
 
   Future<void> _search(String q) async {
-    if (q.length < 1) {
+    if (q.isEmpty) {
       setState(() {
         _people = [];
         _searching = false;
@@ -124,6 +124,7 @@ class _UpdateLabourRatePageState extends State<UpdateLabourRatePage> {
 
   Future<void> _submit() async {
     if (!await _ensureLogin()) return;
+    if (!mounted) return;
     final name = '${_selected?['name'] ?? _searchCtrl.text}'.trim();
     final mobile = '${_selected?['mobile'] ?? ''}'.trim();
     final rate = double.tryParse(_rateCtrl.text.trim()) ?? 0;

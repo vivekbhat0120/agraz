@@ -512,6 +512,7 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
       amountCtrl.dispose();
     });
     if (ok != true) return;
+    if (!mounted) return;
     if (amount == null || amount == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(tr('Enter valid amount'))),

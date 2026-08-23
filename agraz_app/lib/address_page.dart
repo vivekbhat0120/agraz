@@ -10,10 +10,10 @@ class AddressPage extends StatefulWidget {
   const AddressPage({super.key, required this.formData});
 
   @override
-  _AddressPageState createState() => _AddressPageState();
+  AddressPageState createState() => AddressPageState();
 }
 
-class _AddressPageState extends State<AddressPage> {
+class AddressPageState extends State<AddressPage> {
   final _formKey = GlobalKey<FormState>();
   final ApiService _apiService = ApiService();
   bool isLoading = false;
@@ -79,6 +79,7 @@ class _AddressPageState extends State<AddressPage> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to fetch user details: $e'),
@@ -99,6 +100,7 @@ class _AddressPageState extends State<AddressPage> {
     try {
       final success = await _apiService.submitTransaction(widget.formData);
 
+      if (!mounted) return;
       setState(() {
         isLoading = false;
       });
@@ -122,6 +124,7 @@ class _AddressPageState extends State<AddressPage> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         isLoading = false;
       });

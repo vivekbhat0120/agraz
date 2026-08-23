@@ -53,6 +53,7 @@ class _CategoryManagementPageState extends State<CategoryManagementPage> {
         throw Exception('Failed to load categories');
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => isLoading = false);
       ScaffoldMessenger.of(
         context,
@@ -80,6 +81,7 @@ class _CategoryManagementPageState extends State<CategoryManagementPage> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => isLoading = false);
       ScaffoldMessenger.of(
         context,
@@ -112,6 +114,7 @@ class _CategoryManagementPageState extends State<CategoryManagementPage> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         _resetForm();
         _fetchCategories();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -123,6 +126,7 @@ class _CategoryManagementPageState extends State<CategoryManagementPage> {
         throw Exception('Failed to save category');
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -136,11 +140,13 @@ class _CategoryManagementPageState extends State<CategoryManagementPage> {
       );
       if (response.statusCode == 200) {
         _fetchCategories();
+        if (!mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(tr('Deleted successfully'))));
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));

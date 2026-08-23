@@ -73,6 +73,7 @@ Future<bool> promptInAppUpdateIfNeeded(BuildContext context) async {
       return true;
     }
 
+    if (!context.mounted) return false;
     await _openPlayStore(context);
     return true;
   } catch (e) {

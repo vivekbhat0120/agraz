@@ -117,7 +117,7 @@ class _FuturePlansPageState extends State<FuturePlansPage> {
   DateTime _entryDate = DateTime.now();
   late int _year;
   int _month = 0; // 0 = All
-  List<_PlanLineCtrls> _lines = [_PlanLineCtrls()];
+  final List<_PlanLineCtrls> _lines = [_PlanLineCtrls()];
   bool _saving = false;
 
   @override
@@ -178,6 +178,7 @@ class _FuturePlansPageState extends State<FuturePlansPage> {
 
   Future<void> _submit() async {
     if (!await _ensureLogin()) return;
+    if (!mounted) return;
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -540,7 +541,7 @@ class _FuturePlansHistoryPageState extends State<FuturePlansHistoryPage> {
                           : ListView.separated(
                               padding: const EdgeInsets.fromLTRB(12, 10, 12, 24),
                               itemCount: _plans.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (_, _) =>
                                   const SizedBox(height: 8),
                               itemBuilder: (context, i) {
                                 final p = _plans[i];

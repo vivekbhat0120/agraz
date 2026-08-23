@@ -449,6 +449,165 @@ const Map<String, String> kKannadaTranslations = {
   'Help Page Content': 'ಸಹಾಯ ಪುಟದ ವಿಷಯ',
   'Back to Main': 'ಮುಖ್ಯಪುಟಕ್ಕೆ ಹಿಂತಿರುಗಿ',
 
+  // Getting Started
+  'Follow these simple steps to get the most out of the app.':
+      'ಆ್ಯಪ್‌ನಿಂದ ಹೆಚ್ಚಿನ ಪ್ರಯೋಜನ ಪಡೆಯಲು ಈ ಸರಳ ಹಂತಗಳನ್ನು ಅನುಸರಿಸಿ.',
+  'Need help along the way? Open the Help Center anytime from the menu.':
+      'ಹಾದಿಯಲ್ಲಿ ಸಹಾಯ ಬೇಕೇ? ಮೆನುವಿನಿಂದ ಯಾವಾಗ ಬೇಕಾದರೂ ಸಹಾಯ ಕೇಂದ್ರವನ್ನು ತೆರೆಯಿರಿ.',
+  'Create your account': 'ನಿಮ್ಮ ಖಾತೆಯನ್ನು ರಚಿಸಿ',
+  'Sign up and set up your farm profile so AgRaz can tailor insights to your needs.':
+      'ನೋಂದಣಿ ಮಾಡಿಕೊಂಡು ನಿಮ್ಮ ಕೃಷಿ ಪ್ರೊಫೈಲ್ ಹೊಂದಿಸಿ, ಆಗ್ರಾಝ್ ನಿಮ್ಮ ಅವಶ್ಯಕತೆಗಳಿಗೆ ಅನುಗುಣವಾಗಿ ಮಾಹಿತಿ ನೀಡುತ್ತದೆ.',
+  'Add family & members': 'ಕುಟುಂಬ ಮತ್ತು ಸದಸ್ಯರನ್ನು ಸೇರಿಸಿ',
+  'Invite family members and organize your farm operations under one account.':
+      'ಕುಟುಂಬ ಸದಸ್ಯರನ್ನು ಆಮಂತ್ರಿಸಿ ಮತ್ತು ಒಂದೇ ಖಾತೆಯ ಅಡಿಯಲ್ಲಿ ನಿಮ್ಮ ಕೃಷಿ ಕಾರ್ಯಾಚರಣೆಯನ್ನು ಸಂಘಟಿಸಿ.',
+  'Track income & expense': 'ಆದಾಯ ಮತ್ತು ವೆಚ್ಚವನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ',
+  'Record every transaction to keep a clear picture of your farm finances.':
+      'ನಿಮ್ಮ ಕೃಷಿ ಹಣಕಾಸಿನ ಸ್ಪಷ್ಟ ಚಿತ್ರಣವನ್ನು ಇರಿಸಿಕೊಳ್ಳಲು ಪ್ರತಿ ವ್ಯವಹಾರವನ್ನು ದಾಖಲಿಸಿ.',
+  'Manage dairy & labour': 'ಹಾಲು ಮತ್ತು ಕೂಲಿ ನಿರ್ವಹಿಸಿ',
+  'Log daily dairy entries, labour work, and payments in one place.':
+      'ದೈನಂದಿನ ಹಾಲು ನಮೂದುಗಳು, ಕೂಲಿ ಕೆಲಸ ಮತ್ತು ಪಾವತಿಗಳನ್ನು ಒಂದೇ ಸ್ಥಳದಲ್ಲಿ ದಾಖಲಿಸಿ.',
+  'Store documents': 'ದಸ್ತಾವೇಜುಗಳನ್ನು ಶೇಖರಿಸಿ',
+  'Keep your important documents, schemes, and records safely backed up.':
+      'ನಿಮ್ಮ ಮುಖ್ಯ ದಸ್ತಾವೇಜುಗಳು, ಯೋಜನೆಗಳು ಮತ್ತು ದಾಖಲೆಗಳನ್ನು ಸುರಕ್ಷಿತವಾಗಿ ಬ್ಯಾಕಪ್ ಮಾಡಿ.',
+  'Explore insights': 'ಒಳನೋಟಗಳನ್ನು ಅನ್ವೇಷಿಸಿ',
+  'Use weather reports, market prices, and future plans to make smart decisions.':
+      'ಹವಾಮಾನ ವರದಿಗಳು, ಮಾರುಕಟ್ಟೆ ಬೆಲೆಗಳು ಮತ್ತು ಭವಿಷ್ಯದ ಯೋಜನೆಗಳನ್ನು ಬುದ್ಧಿವಂತಿಕೆಯ ನಿರ್ಧಾರಗಳಿಗಾಗಿ ಬಳಸಿ.',
+
+  // FAQ
+  'Find quick answers to common questions about AgRaz.':
+      'ಆಗ್ರಾಝ್ ಬಗ್ಗೆ ಸಾಮಾನ್ಯ ಪ್ರಶ್ನೆಗಳಿಗೆ ಶೀಘ್ರ ಉತ್ತರಗಳನ್ನು ಕಂಡುಹಿಡಿಯಿರಿ.',
+  'AgRaz is a farm management app that helps you track income, expenses, dairy, labour, documents, and market insights in one place.':
+      'ಆಗ್ರಾಝ್ ಎಂಬುದು ಆದಾಯ, ವೆಚ್ಚ, ಹಾಲು, ಕೂಲಿ, ದಸ್ತಾವೇಜುಗಳು ಮತ್ತು ಮಾರುಕಟ್ಟೆ ಒಳನೋಟಗಳನ್ನು ಒಂದೇ ಸ್ಥಳದಲ್ಲಿ ಟ್ರ್ಯಾಕ್ ಮಾಡಲು ಸಹಾಯ ಮಾಡುವ ಕೃಷಿ ನಿರ್ವಹಣಾ ಆ್ಯಪ್.',
+  'Is my data safe?': 'ನನ್ನ ಡೇಟಾ ಸುರಕ್ಷಿತವೇ?',
+  'Your data is stored securely and linked to your account. You can back up documents and records within the app.':
+      'ನಿಮ್ಮ ಡೇಟಾವನ್ನು ಸುರಕ್ಷಿತವಾಗಿ ಸಂಗ್ರಹಿಸಿ ನಿಮ್ಮ ಖಾತೆಗೆ ಲಿಂಕ್ ಮಾಡಲಾಗುತ್ತದೆ. ಆ್ಯಪ್‌ನಲ್ಲಿ ದಸ್ತಾವೇಜುಗಳು ಮತ್ತು ದಾಖಲೆಗಳನ್ನು ಬ್ಯಾಕಪ್ ಮಾಡಬಹುದು.',
+  'Do I need internet to use the app?': 'ಆ್ಯಪ್ ಬಳಸಲು ಇಂಟರ್ನೆಟ್ ಬೇಕೇ?',
+  'Many features work offline and sync automatically when you reconnect. Some features like weather and market prices need internet.':
+      'ಹಲವು ವೈಶಿಷ್ಟ್ಯಗಳು ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ ಕೆಲಸ ಮಾಡುತ್ತವೆ ಮತ್ತು ಮರುಸಂಪರ್ಕಿಸಿದಾಗ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಸಿಂಕ್ ಆಗುತ್ತವೆ. ಹವಾಮಾನ ಮತ್ತು ಮಾರುಕಟ್ಟೆ ಬೆಲೆಗಳಂತಹ ಕೆಲವು ವೈಶಿಷ್ಟ್ಯಗಳಿಗೆ ಇಂಟರ್ನೆಟ್ ಬೇಕು.',
+  'How do I add family members?': 'ಕುಟುಂಬ ಸದಸ್ಯರನ್ನು ಹೇಗೆ ಸೇರಿಸುವುದು?',
+  'Go to your profile and use the Family Members option to invite and manage people in your farm account.':
+      'ನಿಮ್ಮ ಪ್ರೊಫೈಲ್‌ಗೆ ಹೋಗಿ ಮತ್ತು ನಿಮ್ಮ ಕೃಷಿ ಖಾತೆಯಲ್ಲಿ ಜನರನ್ನು ಆಮಂತ್ರಿಸಲು ಮತ್ತು ನಿರ್ವಹಿಸಲು ಕುಟುಂಬ ಸದಸ್ಯರ ಆಯ್ಕೆಯನ್ನು ಬಳಸಿ.',
+  'How do I record transactions?': 'ವ್ಯವಹಾರಗಳನ್ನು ಹೇಗೆ ದಾಖಲಿಸುವುದು?',
+  'Open Income & Expense from the menu and use the add button to record income or expense entries.':
+      'ಮೆನುವಿನಿಂದ ಆದಾಯ ಮತ್ತು ವೆಚ್ಚವನ್ನು ತೆರೆದು ಆದಾಯ ಅಥವಾ ವೆಚ್ಚ ನಮೂದುಗಳನ್ನು ದಾಖಲಿಸಲು ಸೇರಿಸು ಬಟನ್ ಬಳಸಿ.',
+  'Can I send feedback?': 'ನಾನು ಪ್ರತಿಕ್ರಿಯೆ ಕಳುಹಿಸಬಹುದೇ?',
+  'Yes. Open the Help Center and choose Send Feedback, or use the feedback option available on most screens.':
+      'ಹೌದು. ಸಹಾಯ ಕೇಂದ್ರವನ್ನು ತೆರೆದು ಪ್ರತಿಕ್ರಿಯೆ ಕಳುಹಿಸಿ ಆಯ್ಕೆಯನ್ನು ಆರಿಸಿ, ಅಥವಾ ಬಹುತೇಕ ಪರದೆಗಳಲ್ಲಿ ಲಭ್ಯವಿರುವ ಪ್ರತಿಕ್ರಿಯೆ ಆಯ್ಕೆಯನ್ನು ಬಳಸಿ.',
+  'How do I contact support?': 'ಬೆಂಬಲವನ್ನು ಹೇಗೆ ಸಂಪರ್ಕಿಸುವುದು?',
+  'Open the Help Center and tap Contact Support to email our team, or call our support helpline.':
+      'ಸಹಾಯ ಕೇಂದ್ರವನ್ನು ತೆರೆದು ನಮ್ಮ ತಂಡಕ್ಕೆ ಇಮೇಲ್ ಮಾಡಲು ಬೆಂಬಲವನ್ನು ಸಂಪರ್ಕಿಸಿ ಟ್ಯಾಪ್ ಮಾಡಿ, ಅಥವಾ ನಮ್ಮ ಬೆಂಬಲ ಹೆಲ್ಪ್‌ಲೈನ್‌ಗೆ ಕರೆ ಮಾಡಿ.',
+  'Is AgRaz free to use?': 'ಆಗ್ರಾಝ್ ಬಳಕೆಗೆ ಉಚಿತವೇ?',
+  'AgRaz is free to download and use for core farm management features.':
+      'ಆಗ್ರಾಝ್ ಕೋರ್ ಕೃಷಿ ನಿರ್ವಹಣಾ ವೈಶಿಷ್ಟ್ಯಗಳಿಗೆ ಡೌನ್‌ಲೋಡ್ ಮಾಡಲು ಮತ್ತು ಬಳಸಲು ಉಚಿತ.',
+
+  // FAQ (additional)
+  'How do I create an account?': 'ನಾನು ಖಾತೆಯನ್ನು ಹೇಗೆ ರಚಿಸುವುದು?',
+  'Open the app, tap Sign Up, enter your details and verify your mobile number to create your farm account.':
+      'ಆ್ಯಪ್ ತೆರೆದು ಸೈನ್ ಅಪ್ ಒತ್ತಿ, ನಿಮ್ಮ ವಿವರಗಳನ್ನು ನಮೂದಿಸಿ ಮತ್ತು ನಿಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯನ್ನು ಪರಿಶೀಲಿಸಿ ನಿಮ್ಮ ಕೃಷಿ ಖಾತೆಯನ್ನು ರಚಿಸಿ.',
+  'I forgot my password. How do I reset it?':
+      'ನನ್ನ ಪಾಸ್‌ವರ್ಡ್ ಮರೆತುಹೋಗಿದೆ. ಅದನ್ನು ಹೇಗೆ ಮರುಹೊಂದಿಸುವುದು?',
+  'On the login screen tap Forgot Password, enter your registered mobile or email, and follow the link to set a new password.':
+      'ಲಾಗಿನ್ ಪರದೆಯಲ್ಲಿ ಪಾಸ್‌ವರ್ಡ್ ಮರೆತುಹೋಯಿತು ಒತ್ತಿ, ನಿಮ್ಮ ನೋಂದಾಯಿತ ಮೊಬೈಲ್ ಅಥವಾ ಇಮೇಲ್ ನಮೂದಿಸಿ ಮತ್ತು ಹೊಸ ಪಾಸ್‌ವರ್ಡ್ ಹೊಂದಿಸಲು ಲಿಂಕ್ ಅನುಸರಿಸಿ.',
+  'How do I add a dairy or milk entry?':
+      'ನಾನು ಹಾಲು ಅಥವಾ ಹಾಲು ನಮೂದನೆಯನ್ನು ಹೇಗೆ ಸೇರಿಸುವುದು?',
+  'Open Dairy from the menu, tap the add button, enter fat, rate, quantity and supplier or buyer details, then save.':
+      'ಮೆನುವಿನಿಂದ ಡೈರಿ ತೆರೆದು ಸೇರಿಸು ಬಟನ್ ಒತ್ತಿ, ಕೊಬ್ಬು, ದರ, ಪ್ರಮಾಣ ಮತ್ತು ಸರಬರಾಜುದಾರ ಅಥವಾ ಖರೀದಿದಾರ ವಿವರಗಳನ್ನು ನಮೂದಿಸಿ ನಂತರ ಉಳಿಸಿ.',
+  'How do I record labour work and wages?':
+      'ನಾನು ಕೂಲಿ ಕೆಲಸ ಮತ್ತು ವೇತನಗಳನ್ನು ಹೇಗೆ ದಾಖಲಿಸುವುದು?',
+  'Go to Labour Work Entry, add the worker, task, date and wage. You can also manage workers in Labour Management.':
+      'ಕೂಲಿ ಕೆಲಸ ನಮೂದುಗೆ ಹೋಗಿ, ಕೆಲಸಗಾರ, ಕಾರ್ಯ, ದಿನಾಂಕ ಮತ್ತು ವೇತನವನ್ನು ಸೇರಿಸಿ. ಕೂಲಿ ನಿರ್ವಹಣೆಯಲ್ಲಿ ಕೆಲಸಗಾರರನ್ನು ನಿರ್ವಹಿಸಬಹುದು.',
+  'How do I upload and manage documents?':
+      'ನಾನು ದಸ್ತಾವೇಜುಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ನಿರ್ವಹಿಸುವುದು ಹೇಗೆ?',
+  'Open Documents, tap Add Document, choose a file from your device, add a title and category, then save it safely in the app.':
+      'ದಸ್ತಾವೇಜುಗಳನ್ನು ತೆರೆದು ದಸ್ತಾವೇಜು ಸೇರಿಸಿ ಒತ್ತಿ, ನಿಮ್ಮ ಸಾಧನದಿಂದ ಫೈಲ್ ಆಯ್ಕೆಮಾಡಿ, ಶೀರ್ಷಿಕೆ ಮತ್ತು ವರ್ಗವನ್ನು ಸೇರಿಸಿ ನಂತರ ಆ್ಯಪ್‌ನಲ್ಲಿ ಸುರಕ್ಷಿತವಾಗಿ ಉಳಿಸಿ.',
+  'How do I change the app language?':
+      'ಆ್ಯಪ್ ಭಾಷೆಯನ್ನು ನಾನು ಹೇಗೆ ಬದಲಾಯಿಸುವುದು?',
+  'Open Settings from the account menu and choose your preferred language. The app supports English and Kannada.':
+      'ಖಾತೆ ಮೆನುವಿನಿಂದ ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ತೆರೆದು ನಿಮ್ಮ ಆದ್ಯತೆಯ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ. ಆ್ಯಪ್ ಇಂಗ್ಲಿಷ್ ಮತ್ತು ಕನ್ನಡವನ್ನು ಬೆಂಬಲಿಸುತ್ತದೆ.',
+  'Does my data sync across devices?':
+      'ನನ್ನ ಡೇಟಾ ಸಾಧನಗಳಾದ್ಯಂತ ಸಿಂಕ್ ಆಗುತ್ತದೆಯೇ?',
+  'Yes. When you are online, your records sync to your account so you can access them from any device after logging in.':
+      'ಹೌದು. ನೀವು ಆನ್‌ಲೈನ್‌ನಲ್ಲಿದ್ದಾಗ, ನಿಮ್ಮ ದಾಖಲೆಗಳು ನಿಮ್ಮ ಖಾತೆಗೆ ಸಿಂಕ್ ಆಗುತ್ತವೆ ಆದ್ದರಿಂದ ಲಾಗಿನ್ ಆದ ನಂತರ ಯಾವುದೇ ಸಾಧನದಿಂದ ಅವುಗಳನ್ನು ಪ್ರವೇಶಿಸಬಹುದು.',
+  'How do I back up my data?': 'ನನ್ನ ಡೇಟಾವನ್ನು ನಾನು ಹೇಗೆ ಬ್ಯಾಕಪ್ ಮಾಡುವುದು?',
+  'Your data is linked to your account and synced automatically when online. Keep your login details safe to restore access anytime.':
+      'ನಿಮ್ಮ ಡೇಟಾವು ನಿಮ್ಮ ಖಾತೆಗೆ ಲಿಂಕ್ ಆಗಿದೆ ಮತ್ತು ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಸಿಂಕ್ ಆಗುತ್ತದೆ. ಯಾವಾಗ ಬೇಕಾದರೂ ಪ್ರವೇಶವನ್ನು ಪುನಃಸ್ಥಾಪಿಸಲು ನಿಮ್ಮ ಲಾಗಿನ್ ವಿವರಗಳನ್ನು ಸುರಕ್ಷಿತವಾಗಿಡಿ.',
+  'How do I check market prices and weather?':
+      'ಮಾರುಕಟ್ಟೆ ಬೆಲೆಗಳು ಮತ್ತು ಹವಾಮಾನವನ್ನು ನಾನು ಹೇಗೆ ಪರಿಶೀಲಿಸುವುದು?',
+  'Open Market Reports for live prices and Weather Report for current conditions and forecasts to plan your activities.':
+      'ನೇರ ಬೆಲೆಗಳಿಗಾಗಿ ಮಾರುಕಟ್ಟೆ ವರದಿಗಳನ್ನು ಮತ್ತು ಪ್ರಸ್ತುತ ಪರಿಸ್ಥಿತಿಗಳು ಹಾಗೂ ಮುನ್ಸೂಚನೆಗಳಿಗಾಗಿ ಹವಾಮಾನ ವರದಿಯನ್ನು ತೆರೆದು ನಿಮ್ಮ ಚಟುವಟಿಕೆಗಳನ್ನು ಯೋಜಿಸಿ.',
+  'How do I add a new organization or farm?':
+      'ನಾನು ಹೊಸ ಸಂಸ್ಥೆ ಅಥವಾ ಕೃಷಿಯನ್ನು ಹೇಗೆ ಸೇರಿಸುವುದು?',
+  'Open Manage Organization from the menu and use the add option to create a new farm or organization profile.':
+      'ಮೆನುವಿನಿಂದ ಸಂಸ್ಥೆಯ ನಿರ್ವಹಣೆಯನ್ನು ತೆರೆದು ಸೇರಿಸು ಆಯ್ಕೆಯನ್ನು ಬಳಸಿ ಹೊಸ ಕೃಷಿ ಅಥವಾ ಸಂಸ್ಥೆ ಪ್ರೊಫೈಲ್ ರಚಿಸಿ.',
+  'Who can see my farm data?': 'ನನ್ನ ಕೃಷಿ ಡೇಟಾವನ್ನು ಯಾರು ನೋಡಬಹುದು?',
+  'Only you and the family members or team you invite can see your data. We never share your information without your permission.':
+      'ನೀವು ಮತ್ತು ನೀವು ಆಮಂತ್ರಿಸುವ ಕುಟುಂಬ ಸದಸ್ಯರು ಅಥವಾ ತಂಡ ಮಾತ್ರ ನಿಮ್ಮ ಡೇಟಾವನ್ನು ನೋಡಬಹುದು. ನಿಮ್ಮ ಅನುಮತಿ ಇಲ್ಲದೆ ನಾವು ನಿಮ್ಮ ಮಾಹಿತಿಯನ್ನು ಎಂದಿಗೂ ಹಂಚಿಕೊಳ್ಳುವುದಿಲ್ಲ.',
+  'How do I delete my data or account?':
+      'ನನ್ನ ಡೇಟಾ ಅಥವಾ ಖಾತೆಯನ್ನು ನಾನು ಹೇಗೆ ಅಳಿಸುವುದು?',
+  'To delete your data or account, contact our support team from the Help Center and we will assist you with the request.':
+      'ನಿಮ್ಮ ಡೇಟಾ ಅಥವಾ ಖಾತೆಯನ್ನು ಅಳಿಸಲು, ಸಹಾಯ ಕೇಂದ್ರದಿಂದ ನಮ್ಮ ಬೆಂಬಲ ತಂಡವನ್ನು ಸಂಪರ್ಕಿಸಿ ಮತ್ತು ವಿನಂತಿಗೆ ನಾವು ನಿಮಗೆ ಸಹಾಯ ಮಾಡುವೆವು.',
+  'Could not open email app': 'ಇಮೇಲ್ ಆ್ಯಪ್ ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ',
+
+  // Getting Started (comprehensive)
+  'Complete your profile': 'ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಪೂರ್ಣಗೊಳಿಸಿ',
+  'Add your name, location and farm details so records and reports stay accurate.':
+      'ದಾಖಲೆಗಳು ಮತ್ತು ವರದಿಗಳು ನಿಖರವಾಗಿರಲು ನಿಮ್ಮ ಹೆಸರು, ಸ್ಥಳ ಮತ್ತು ಕೃಷಿ ವಿವರಗಳನ್ನು ಸೇರಿಸಿ.',
+  'Manage daily operations': 'ದೈನಂದಿನ ಕಾರ್ಯಾಚರಣೆಗಳನ್ನು ನಿರ್ವಹಿಸಿ',
+  'Log dairy, labour, documents and events in one organized place.':
+      'ಹಾಲು, ಕೂಲಿ, ದಸ್ತಾವೇಜುಗಳು ಮತ್ತು ಘಟನೆಗಳನ್ನು ಒಂದೇ ಸಂಘಟಿತ ಸ್ಥಳದಲ್ಲಿ ದಾಖಲಿಸಿ.',
+  'Explore features & modules': 'ವೈಶಿಷ್ಟ್ಯಗಳು ಮತ್ತು ಮಾಡ್ಯೂಲ್‌ಗಳನ್ನು ಅನ್ವೇಷಿಸಿ',
+  'Here is how to use every module available in AgRaz.':
+      'ಆಗ್ರಾಝ್‌ನಲ್ಲಿ ಲಭ್ಯವಿರುವ ಪ್ರತಿಯೊಂದು ಮಾಡ್ಯೂಲ್ ಹೇಗೆ ಬಳಸುವುದು ಎಂಬುದನ್ನು ಇಲ್ಲಿ ನೋಡಿ.',
+  'Finance & Records': 'ಹಣಕಾಸು ಮತ್ತು ದಾಖಲೆಗಳು',
+  'Farm Operations': 'ಕೃಷಿ ಕಾರ್ಯಾಚರಣೆಗಳು',
+  'Market & Advisory': 'ಮಾರುಕಟ್ಟೆ ಮತ್ತು ಸಲಹೆ',
+  'Learning & Support': 'ಕಲಿಕೆ ಮತ್ತು ಬೆಂಬಲ',
+  'Your Account': 'ನಿಮ್ಮ ಖಾತೆ',
+  'Open from the menu, tap +, choose Income or Expense, enter amount, category and date, then save. Review totals and charts on the dashboard.':
+      'ಮೆನುವಿನಿಂದ ತೆರೆದು + ಒತ್ತಿ, ಆದಾಯ ಅಥವಾ ವೆಚ್ಚ ಆಯ್ಕೆಮಾಡಿ, ಮೊತ್ತ, ವರ್ಗ ಮತ್ತು ದಿನಾಂಕವನ್ನು ನಮೂದಿಸಿ ನಂತರ ಉಳಿಸಿ. ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ನಲ್ಲಿ ಒಟ್ಟು ಮತ್ತು ಚಾರ್ಟ್‌ಗಳನ್ನು ಪರಿಶೀಲಿಸಿ.',
+  'Add your farm or organization, manage members and roles so your team can collaborate and share records.':
+      'ನಿಮ್ಮ ಕೃಷಿ ಅಥವಾ ಸಂಸ್ಥೆಯನ್ನು ಸೇರಿಸಿ, ಸದಸ್ಯರು ಮತ್ತು ಪಾತ್ರಗಳನ್ನು ನಿರ್ವಹಿಸಿ ಹಾಗೂ ನಿಮ್ಮ ತಂಡ ಸಹಕರಿಸಿ ದಾಖಲೆಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಲು ಅವಕಾಶ ಮಾಡಿ.',
+  'Tap Add Document to upload and organize farm papers, schemes and certificates. Access them anytime, even offline.':
+      'ಕೃಷಿ ಕಾಗದಪತ್ರಗಳು, ಯೋಜನೆಗಳು ಮತ್ತು ಪ್ರಮಾಣಪತ್ರಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಮತ್ತು ಸಂಘಟಿಸಲು ದಸ್ತಾವೇಜು ಸೇರಿಸಿ ಒತ್ತಿ. ಆಫ್‌ಲೈನ್‌ನಲ್ಲೂ ಸಹ ಯಾವಾಗ ಬೇಕಾದರೂ ಅವುಗಳನ್ನು ಪಡೆಯಿರಿ.',
+  'Record land and RTC (property) details to keep your land records organized and easy to reference.':
+      'ನಿಮ್ಮ ಭೂ ದಾಖಲೆಗಳನ್ನು ಸಂಘಟಿತವಾಗಿಡಲು ಮತ್ತು ಸುಲಭವಾಗಿ ಉಲ್ಲೇಖಿಸಲು ಭೂ ಮತ್ತು RTC (ಆಸ್ತಿ) ವಿವರಗಳನ್ನು ದಾಖಲಿಸಿ.',
+  'Log daily milk collection, fat, rate and payments. Track supplier and buyer accounts in one place.':
+      'ದೈನಂದಿನ ಹಾಲು ಸಂಗ್ರಹ, ಕೊಬ್ಬು, ದರ ಮತ್ತು ಪಾವತಿಗಳನ್ನು ದಾಖಲಿಸಿ. ಸರಬರಾಜುದಾರ ಮತ್ತು ಖರೀದಿದಾರ ಖಾತೆಗಳನ್ನು ಒಂದೇ ಸ್ಥಳದಲ್ಲಿ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ.',
+  'Manage your dairy business, suppliers and deliveries with consolidated reports and balances.':
+      'ಏಕೀಕೃತ ವರದಿಗಳು ಮತ್ತು ಬ್ಯಾಲೆನ್ಸ್‌ಗಳೊಂದಿಗೆ ನಿಮ್ಮ ಹಾಲು ವ್ಯವಹಾರ, ಸರಬರಾಜುದಾರರು ಮತ್ತು ಡೆಲಿವರಿಗಳನ್ನು ನಿರ್ವಹಿಸಿ.',
+  'Add workers, track attendance and manage labour profiles for your farm.':
+      'ಕೆಲಸಗಾರರನ್ನು ಸೇರಿಸಿ, ಹಾಜರಾತಿಯನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ ಮತ್ತು ನಿಮ್ಮ ಕೃಷಿಗೆ ಕೂಲಿ ಪ್ರೊಫೈಲ್‌ಗಳನ್ನು ನಿರ್ವಹಿಸಿ.',
+  'Record daily labour work, tasks and wages so payments stay accurate and transparent.':
+      'ಪಾವತಿಗಳು ನಿಖರ ಮತ್ತು ಪಾರದರ್ಶಕವಾಗಿರಲು ದೈನಂದಿನ ಕೂಲಿ ಕೆಲಸ, ಕಾರ್ಯಗಳು ಮತ್ತು ವೇತನಗಳನ್ನು ದಾಖಲಿಸಿ.',
+  'Create quick notes and reminders for anything you need to remember on the farm.':
+      'ಕೃಷಿಯಲ್ಲಿ ನೆನಪಿಡಬೇಕಾದ ಯಾವುದೇ ವಿಷಯಕ್ಕೆ ಶೀಘ್ರ ಟಿಪ್ಪಣಿಗಳು ಮತ್ತು ಜ್ಞಾಪನೆಗಳನ್ನು ರಚಿಸಿ.',
+  'Plan crops, activities and goals ahead, and track their progress over time.':
+      'ಬೆಳೆಗಳು, ಚಟುವಟಿಕೆಗಳು ಮತ್ತು ಗುರಿಗಳನ್ನು ಮುಂಚಿತವಾಗಿ ಯೋಜಿಸಿ ಮತ್ತು ಅವುಗಳ ಪ್ರಗತಿಯನ್ನು ಸಮಯದೊಂದಿಗೆ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ.',
+  'Schedule farm events, reminders and activities so nothing important is missed.':
+      'ಮುಖ್ಯವಾದುದು ಏನೂ ತಪ್ಪದಂತೆ ಕೃಷಿ ಘಟನೆಗಳು, ಜ್ಞಾಪನೆಗಳು ಮತ್ತು ಚಟುವಟಿಕೆಗಳನ್ನು ನಿಗದಿಪಡಿಸಿ.',
+  'Check live market prices and trends to decide the best time to buy or sell.':
+      'ಖರೀದಿಸಲು ಅಥವಾ ಮಾರಾಟ ಮಾಡಲು ಉತ್ತಮ ಸಮಯವನ್ನು ನಿರ್ಧರಿಸಲು ನೇರ ಬಜಾರು ಬೆಲೆಗಳು ಮತ್ತು ಟ್ರೆಂಡ್‌ಗಳನ್ನು ಪರಿಶೀಲಿಸಿ.',
+  'View current weather and forecasts to plan farm activities safely.':
+      'ಕೃಷಿ ಚಟುವಟಿಕೆಗಳನ್ನು ಸುರಕ್ಷಿತವಾಗಿ ಯೋಜಿಸಲು ಪ್ರಸ್ತುತ ಹವಾಮಾನ ಮತ್ತು ಮುನ್ಸೂಚನೆಗಳನ್ನು ವೀಕ್ಷಿಸಿ.',
+  'Browse the marketplace to buy products or list your own produce for sale.':
+      'ಉತ್ಪನ್ನಗಳನ್ನು ಖರೀದಿಸಲು ಅಥವಾ ನಿಮ್ಮ ಸ್ವಂತ ಉತ್ಪಾದನೆಯನ್ನು ಮಾರಾಟಕ್ಕೆ ಪಟ್ಟಿ ಮಾಡಲು ಮಾರುಕಟ್ಟೆಯನ್ನು ಬ್ರೌಸ್ ಮಾಡಿ.',
+  'Find local agricultural services like equipment, repair and farm support near you.':
+      'ನಿಮ್ಮ ಹತ್ತಿರದಲ್ಲಿ ಸಲಕರಣೆ, ದುರಸ್ತಿ ಮತ್ತು ಕೃಷಿ ಬೆಂಬಲದಂತಹ ಸ್ಥಳೀಯ ಕೃಷಿ ಸೇವೆಗಳನ್ನು ಕಂಡುಹಿಡಿಯಿರಿ.',
+  'Read articles and guides to learn better and more profitable farming practices.':
+      'ಉತ್ತಮ ಮತ್ತು ಲಾಭದಾಯಕ ಕೃಷಿ ಪದ್ಧತಿಗಳನ್ನು ಕಲಿಯಲು ಲೇಖನಗಳು ಮತ್ತು ಮಾರ್ಗದರ್ಶಿಗಳನ್ನು ಓದಿ.',
+  'Discover loans, insurance and government schemes you may be eligible for.':
+      'ನೀವು ಅರ್ಹತೆ ಪಡೆಯಬಹುದಾದ ಸಾಲಗಳು, ವಿಮೆ ಮತ್ತು ಸರ್ಕಾರಿ ಯೋಜನೆಗಳನ್ನು ಕಂಡುಹಿಡಿಯಿರಿ.',
+  'Share your suggestions or report issues from the Help Center or any screen to help us improve AgRaz.':
+      'ಆಗ್ರಾಝ್ ಅನ್ನು ಸುಧಾರಿಸಲು ನಿಮ್ಮ ಸಲಹೆಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಿ ಅಥವಾ ಸಹಾಯ ಕೇಂದ್ರ ಅಥವಾ ಯಾವುದೇ ಪರದೆಯಿಂದ ಸಮಸ್ಯೆಗಳನ್ನು ವರದಿ ಮಾಡಿ.',
+  'Update your personal details, language and preferences from the account menu.':
+      'ಖಾತೆ ಮೆನುವಿನಿಂದ ನಿಮ್ಮ ವೈಯಕ್ತಿಕ ವಿವರಗಳು, ಭಾಷೆ ಮತ್ತು ಆದ್ಯತೆಗಳನ್ನು ನವೀಕರಿಸಿ.',
+  'Invite family members and assign roles to manage the farm together under one account.':
+      'ಕುಟುಂಬ ಸದಸ್ಯರನ್ನು ಆಮಂತ್ರಿಸಿ ಮತ್ತು ಒಂದೇ ಖಾತೆಯ ಅಡಿಯಲ್ಲಿ ಕೃಷಿಯನ್ನು ಜಂಟಿಯಾಗಿ ನಿರ್ವಹಿಸಲು ಪಾತ್ರಗಳನ್ನು ನಿಯೋಜಿಸಿ.',
+  'Adjust app settings such as language, notifications and appearance.':
+      'ಭಾಷೆ, ಅಧಿಸೂಚನೆಗಳು ಮತ್ತು ನೋಟದಂತಹ ಆ್ಯಪ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ಹೊಂದಿಸಿ.',
+  'Meet the people behind AgRaz and learn about our mission.':
+      'ಆಗ್ರಾಝ್ ಹಿಂದಿನ ಜನರನ್ನು ಭೇಟಿ ಮಾಡಿ ಮತ್ತು ನಮ್ಮ ಮಿಷನ್ ಬಗ್ಗೆ ತಿಳಿಯಿರಿ.',
+
   // Settings
   'Change password': 'ಪಾಸ್‌ವರ್ಡ್ ಬದಲಾಯಿಸಿ',
   'Current password': 'ಪ್ರಸ್ತುತ ಪಾಸ್‌ವರ್ಡ್',

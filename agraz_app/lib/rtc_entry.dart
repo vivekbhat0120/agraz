@@ -680,7 +680,7 @@ class _RtcEntryPageState extends State<RtcEntryPage> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: items.contains(value) ? value : items.first,
+      initialValue: items.contains(value) ? value : items.first,
       decoration: _dec(label),
       items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
       onChanged: onChanged,
