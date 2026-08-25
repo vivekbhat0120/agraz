@@ -9,6 +9,7 @@ import 'feedback_fab.dart';
 import 'labor_categories.dart';
 import 'l10n/app_l10n.dart';
 import 'login.dart';
+import 'voice_dictation.dart';
 
 class LabourWorkPage extends StatefulWidget {
   final int initialTab;
@@ -373,9 +374,17 @@ class _LabourWorkPageState extends State<LabourWorkPage>
       final res = await _api.createLaborWork(payload);
       if (!mounted) return;
       if (res['success'] == true) {
-        _nameCtrl.clear();
-        _rateCtrl.clear();
-        _narrationCtrl.clear();
+        stopVoiceAndClearFields([
+          _nameCtrl,
+          _rateCtrl,
+          _narrationCtrl,
+        ]);
+        setState(() {
+          _date = DateTime.now();
+          _category = kLaborWorkCategories.first;
+          _shift = 'fullday';
+          _gender = 'Male';
+        });
         _applyShiftDefaultDays(_shift);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -34,6 +34,7 @@ import {
   Milk,
   FolderOpen,
   CalendarDays,
+  Trophy,
 } from "lucide-react";
 import "./Sidebar.css";
 
@@ -71,6 +72,7 @@ const iconMap = {
   Milk: <Milk size={18} strokeWidth={1.75} />,
   FolderOpen: <FolderOpen size={18} strokeWidth={1.75} />,
   CalendarDays: <CalendarDays size={18} strokeWidth={1.75} />,
+  Trophy: <Trophy size={18} strokeWidth={1.75} />,
 };
 
 /** Normalize menu rows from `/my-menus` (snake_case + occasional PascalCase). */
@@ -146,6 +148,45 @@ function menuSubtreeActive(location, item) {
   return ch.some((c) => menuSubtreeActive(location, c));
 }
 
+const DEFAULT_ADMIN_NAV = [
+  { menu_name: "Dashboard", url: "/home", icon: "LayoutDashboard" },
+  {
+    menu_name: "Store & Catalog",
+    url: "/ecom-admin",
+    icon: "Store",
+    children: [
+      { menu_name: "Catalog (products)", url: "/ecom-admin?tab=products", icon: "Package" },
+      { menu_name: "Categories", url: "/ecom-admin?tab=categories", icon: "Tags" },
+      { menu_name: "Sub-categories", url: "/ecom-admin?tab=sub-categories", icon: "Layers" },
+      { menu_name: "Colors", url: "/ecom-admin?tab=colors", icon: "Palette" },
+    ],
+  },
+  {
+    menu_name: "Marketplace",
+    url: "/marketplace",
+    icon: "Share2",
+    children: [
+      { menu_name: "Vendor details", url: "/vendor-details", icon: "Store" },
+      { menu_name: "Vendor & product mapping", url: "/vendor-product-mapping", icon: "Share2" },
+      { menu_name: "Vendor & user mapping", url: "/vendor-user-mapping", icon: "Users" },
+    ],
+  },
+  {
+    menu_name: "User & Roles",
+    url: "/admin-master",
+    icon: "ShieldAlert",
+    children: [
+      { menu_name: "User List", url: "/users", icon: "Users" },
+      { menu_name: "Role Creation", url: "/rolecreation", icon: "ShieldPlus" },
+      { menu_name: "Existing Roles", url: "/existingroles", icon: "Shield" },
+      { menu_name: "Role Permissions", url: "/rolemanagement", icon: "Lock" },
+      { menu_name: "User-Role Map", url: "/usermanagement", icon: "Link" },
+      { menu_name: "Menu Creation", url: "/menucreation", icon: "Menu" },
+      { menu_name: "Existing Menus", url: "/existingmenus", icon: "List" },
+    ],
+  },
+];
+
 const HARD_CODED_SERVICE_NAV = [
   { menu_name: "Service Registrations", url: "/service-registrations", icon: "ClipboardList" },
   { menu_name: "Government Facilities", url: "/gov-facilities", icon: "Landmark" },
@@ -166,6 +207,7 @@ const HARD_CODED_TOOLS_NAV = [
   { menu_name: "Dairy", url: "/dairy", icon: "Milk" },
   { menu_name: "Documents", url: "/documents", icon: "FolderOpen" },
   { menu_name: "Event Manage", url: "/events", icon: "CalendarDays" },
+  { menu_name: "Achievers Lobby", url: "/achievers-lobby", icon: "Trophy" },
 ];
 
 const LOGOUT_NAV_ITEM = { menu_name: "Logout", url: "/logout", icon: "LogOut" };
@@ -311,13 +353,27 @@ const Sidebar = ({ isOpen, isMobile, setMobileOpen, mobileOpen, setOpen }) => {
 
         const data = await getMyMenus();
         const raw = Array.isArray(data) ? data : data.data || [];
-        setMenus(raw.map(normalizeMenuItem).filter(Boolean));
+        let normalized = raw.map(normalizeMenuItem).filter(Boolean);
+        const hasUserList = (items) =>
+          items.some(
+            (i) =>
+              i.url === "/users" ||
+              (Array.isArray(i.children) && i.children.some((c) => c.url === "/users"))
+          );
+        if (!normalized.length) {
+          normalized = DEFAULT_ADMIN_NAV.map(normalizeMenuItem).filter(Boolean);
+        } else if (!hasUserList(normalized)) {
+          const userGroup = DEFAULT_ADMIN_NAV.find((i) => i.url === "/admin-master");
+          if (userGroup) normalized = [...normalized, normalizeMenuItem(userGroup)].filter(Boolean);
+        }
+        setMenus(normalized);
       } catch (err) {
         console.error("Error fetching menus:", err);
+        setMenus(DEFAULT_ADMIN_NAV.map(normalizeMenuItem).filter(Boolean));
         if (err.response?.status === 401) {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
-          window.location.href = '/login';
+          window.location.href = '/agraz_admin/login';
         }
       }
     };

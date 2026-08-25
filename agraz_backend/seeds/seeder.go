@@ -25,6 +25,7 @@ func SeedAll() {
 	SeedGovFacilities()
 	SeedMarketReports()
 	SeedIncomeExpenses()
+	SeedAchieversLobby()
 }
 
 func SeedEcomDefaults() {

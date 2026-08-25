@@ -70,7 +70,7 @@ const EventsAdmin = () => {
   useEffect(() => {
     (async () => {
       try {
-        const data = await getUsers(1, 300);
+        const data = await getUsers(1, 500);
         setUsers(data.data || data.users || []);
       } catch (e) {
         console.error(e);

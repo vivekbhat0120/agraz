@@ -25,6 +25,7 @@ import RtcEntryAdmin from "./pages/RtcEntryAdmin";
 import DairyAdmin from "./pages/DairyAdmin";
 import DocumentsAdmin from "./pages/DocumentsAdmin";
 import EventsAdmin from "./pages/EventsAdmin";
+import AchieversLobbyAdmin from "./pages/AchieversLobbyAdmin";
 import { logoutAndRedirect } from "./lib/authStorage";
 import "./App.css";
 
@@ -156,6 +157,10 @@ function App() {
 
         <Route path="/events" element={
           <ProtectedRoute><EventsAdmin /></ProtectedRoute>
+        } />
+
+        <Route path="/achievers-lobby" element={
+          <ProtectedRoute><AchieversLobbyAdmin /></ProtectedRoute>
         } />
         
         <Route path="/auditlogs" element={

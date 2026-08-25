@@ -15,6 +15,14 @@ subprojects {
 subprojects {
     project.evaluationDependsOn(":app")
 }
+// Plugins still default to javac source/target 8, which JDK 21+ warns is obsolete.
+subprojects {
+    tasks.withType<JavaCompile>().configureEach {
+        sourceCompatibility = JavaVersion.VERSION_11.toString()
+        targetCompatibility = JavaVersion.VERSION_11.toString()
+        options.compilerArgs.add("-Xlint:-options")
+    }
+}
 
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)

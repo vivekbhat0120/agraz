@@ -17,6 +17,7 @@ import 'labour_work.dart';
 import 'marke_report.dart';
 import 'buy_and_sell.dart';
 import 'farmer_education.dart';
+import 'achievers_lobby.dart';
 import 'government_facilities.dart';
 import 'weather_report.dart';
 import 'rtc_entry.dart';
@@ -70,6 +71,7 @@ class _MainPageState extends State<MainPage> {
   int? _freeDaysRemaining;
   int _pendingLaborShares = 0;
   AccountSession _session = AccountSession.guest;
+  Map<String, dynamic>? _latestLobby;
 
   final List<String> _sliderImages = [
     'assets/images/areca.jpg',
@@ -87,6 +89,7 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     _refreshAuthState();
+    _loadLatestLobby();
     _currentPage = 0;
     _pageController = PageController(viewportFraction: 1.0);
     _autoSlideTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
@@ -181,6 +184,15 @@ class _MainPageState extends State<MainPage> {
     }
   }
 
+  Future<void> _loadLatestLobby() async {
+    try {
+      final row = await ApiService().fetchLatestAchieversLobby();
+      if (mounted) setState(() => _latestLobby = row);
+    } catch (_) {
+      if (mounted) setState(() => _latestLobby = null);
+    }
+  }
+
   int? _remainingFreeDaysFrom(String rawCreatedAt) {
     try {
       final registered = DateTime.parse(rawCreatedAt).toLocal();
@@ -221,6 +233,7 @@ class _MainPageState extends State<MainPage> {
       MaterialPageRoute(builder: (context) => page),
     );
     if (mounted) await _refreshAuthState();
+    if (mounted) await _loadLatestLobby();
   }
 
   /// Opens [page] if logged in; otherwise shows login, then opens [page] on success.
@@ -243,6 +256,7 @@ class _MainPageState extends State<MainPage> {
         MaterialPageRoute(builder: (context) => page),
       );
       if (mounted) await _refreshAuthState();
+      if (mounted) await _loadLatestLobby();
       return;
     }
 
@@ -335,6 +349,8 @@ class _MainPageState extends State<MainPage> {
             _buildFreeVersionNote(),
             if (_isLoggedIn && _session.isSubUser) _buildFamilyAccountBanner(),
             _buildQuickShortcuts(),
+            if (_featureEnabled(AppFeatureCatalog.achieversLobby))
+              _buildLatestLobbyBanner(),
             if (_isLoggedIn)
               ListenableBuilder(
                 listenable: OfflineSync.instance,
@@ -571,6 +587,17 @@ class _MainPageState extends State<MainPage> {
                         const FarmerEducationPage(),
                         closeDrawer: true,
                         feature: AppFeatureCatalog.farmerEducation,
+                      ),
+                    ),
+                  if (_featureEnabled(AppFeatureCatalog.achieversLobby))
+                    _drawerTile(
+                      Icons.emoji_events_rounded,
+                      tr('Achievers Lobby'),
+                      AppColors.accent,
+                      () => _openModule(
+                        const AchieversLobbyPage(),
+                        closeDrawer: true,
+                        feature: AppFeatureCatalog.achieversLobby,
                       ),
                     ),
                   if (_featureEnabled(AppFeatureCatalog.government))
@@ -1244,6 +1271,16 @@ class _MainPageState extends State<MainPage> {
         ),
       ),
       (
+        icon: Icons.emoji_events_rounded,
+        label: tr('Lobby'),
+        color: AppColors.accent,
+        feature: AppFeatureCatalog.achieversLobby,
+        open: () => _openModule(
+          const AchieversLobbyPage(),
+          feature: AppFeatureCatalog.achieversLobby,
+        ),
+      ),
+      (
         icon: Icons.account_balance_rounded,
         label: tr('Govt'),
         color: AppColors.info,
@@ -1571,6 +1608,62 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
+  Widget _buildLatestLobbyBanner() {
+    final item = _latestLobby;
+    if (item == null) return const SizedBox.shrink();
+    final title = (item['title']?.toString().trim().isNotEmpty == true)
+        ? item['title'].toString()
+        : (item['name']?.toString() ?? tr('Achievers Lobby'));
+    final category = item['category']?.toString() ?? '';
+    final kind = item['kind']?.toString() == 'innovation'
+        ? tr('Innovation')
+        : tr('Achiever');
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: AppCard(
+        onTap: () => _openModule(
+          const AchieversLobbyPage(),
+          feature: AppFeatureCatalog.achieversLobby,
+        ),
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            const TintedIcon(
+              icon: Icons.play_circle_fill_rounded,
+              color: AppColors.accent,
+              boxSize: 48,
+              size: 28,
+              radius: 14,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(tr('Latest in Achievers Lobby'), style: AppText.caption),
+                  const SizedBox(height: 2),
+                  Text(
+                    title,
+                    style: AppText.bodyStrong,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    [kind, if (category.isNotEmpty) category].join(' · '),
+                    style: AppText.small,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildServicesGrid() {
     final services = [
       _ServiceFeature(
@@ -1740,6 +1833,19 @@ class _MainPageState extends State<MainPage> {
           tr('Follow expert-backed practices'),
           tr('Learn in English or Kannada'),
           tr('Apply tips to your own farm'),
+        ],
+      ),
+      _ServiceFeature(
+        icon: Icons.emoji_events_rounded,
+        title: tr('Achievers Lobby'),
+        description: tr(
+          'Watch videos of farm achievers and innovations, or upload your own for the community.',
+        ),
+        details: [
+          tr('Browse Achievers and Innovations tabs'),
+          tr('Latest videos show first when you open the menu'),
+          tr('Search by category and name'),
+          tr('Upload a video with your name and mobile for admin approval'),
         ],
       ),
       _ServiceFeature(

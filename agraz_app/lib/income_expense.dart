@@ -378,16 +378,20 @@ class _IncomeExpensePageState extends State<IncomeExpensePage>
 
   void _clearFormForNextEntry() {
     final keptType = _formData.receiptPaymentType;
-    _nameController.clear();
-    _mobileController.clear();
-    _narrationController.clear();
-    _amountController.clear();
-    _villageController.clear();
-    _postController.clear();
-    _talukController.clear();
-    _districtController.clear();
-    _extraAddressController.clear();
-    _pincodeController.clear();
+    // Do not call Form.reset() after clear — it restores TextFormField
+    // values (including narration) from the last save.
+    stopVoiceAndClearFields([
+      _nameController,
+      _mobileController,
+      _narrationController,
+      _amountController,
+      _villageController,
+      _postController,
+      _talukController,
+      _districtController,
+      _extraAddressController,
+      _pincodeController,
+    ]);
 
     setState(() {
       _formData.amount = null;
@@ -410,7 +414,6 @@ class _IncomeExpensePageState extends State<IncomeExpensePage>
       _formData.subCategories = [];
       _updateCategories();
     });
-    _formKey.currentState?.reset();
   }
 
   Future<void> _submitForm() async {

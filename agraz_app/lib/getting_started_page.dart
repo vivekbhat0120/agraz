@@ -162,6 +162,12 @@ class GettingStartedPage extends StatelessWidget {
           'Read articles and guides to learn better and more profitable farming practices.',
         ),
         _Feature(
+          Icons.emoji_events_rounded,
+          'Achievers Lobby',
+          AppColors.accent,
+          'Open Achievers or Innovations, watch the latest videos, search by name or category, and upload your own video for approval.',
+        ),
+        _Feature(
           Icons.account_balance_rounded,
           'Government Facilities',
           AppColors.info,

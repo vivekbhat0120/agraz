@@ -17,7 +17,7 @@ const VendorUserMapping = () => {
     try {
       const [mRes, uRes, vRes] = await Promise.all([
         getVendorUsers({ page: 1, limit: 200 }),
-        getUsers(1, 200),
+        getUsers(1, 500),
         getVendors({ page: 1, limit: 200 }),
       ]);
       setMapped(mRes.data || []);

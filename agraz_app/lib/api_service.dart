@@ -2446,4 +2446,163 @@ class ApiService {
       );
     }
   }
+
+  Map<String, String> _publicJsonHeaders() {
+    final h = <String, String>{
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    };
+    mergeTenantHeaders(h);
+    return h;
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAchieversLobby({
+    String? kind,
+    String? category,
+    String? q,
+    String? name,
+    int page = 1,
+    int limit = 30,
+  }) async {
+    final uri = Uri.parse('$BASE_URL/api/achievers-lobby').replace(
+      queryParameters: {
+        'page': '$page',
+        'limit': '$limit',
+        if (kind != null && kind.isNotEmpty) 'kind': kind,
+        if (category != null && category.isNotEmpty) 'category': category,
+        if (q != null && q.trim().isNotEmpty) 'q': q.trim(),
+        if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+      },
+    );
+    final response = await http.get(uri, headers: _publicJsonHeaders());
+    if (response.statusCode != 200) {
+      throw Exception(
+        _apiErrorMessage(
+          response.body.isNotEmpty ? jsonDecode(response.body) : null,
+          response.statusCode,
+          fallback: 'Failed to load videos',
+        ),
+      );
+    }
+    return _mapListFromBody(response.body);
+  }
+
+  Future<Map<String, dynamic>?> fetchLatestAchieversLobby({String? kind}) async {
+    final uri = Uri.parse('$BASE_URL/api/achievers-lobby/latest').replace(
+      queryParameters: {
+        if (kind != null && kind.isNotEmpty) 'kind': kind,
+      },
+    );
+    final response = await http.get(uri, headers: _publicJsonHeaders());
+    if (response.statusCode != 200) return null;
+    final decoded =
+        response.body.isNotEmpty ? jsonDecode(response.body) : null;
+    if (decoded is Map && decoded['data'] is Map) {
+      return Map<String, dynamic>.from(decoded['data'] as Map);
+    }
+    return null;
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAchieversLobbyCategories({
+    String? kind,
+  }) async {
+    final uri = Uri.parse('$BASE_URL/api/achievers-lobby/categories').replace(
+      queryParameters: {
+        if (kind != null && kind.isNotEmpty) 'kind': kind,
+      },
+    );
+    final response = await http.get(uri, headers: _publicJsonHeaders());
+    if (response.statusCode != 200) return [];
+    return _mapListFromBody(response.body);
+  }
+
+  Future<Map<String, dynamic>> fetchAchieversLobbyItem(int id) async {
+    final response = await http.get(
+      Uri.parse('$BASE_URL/api/achievers-lobby/$id'),
+      headers: _publicJsonHeaders(),
+    );
+    final decoded =
+        response.body.isNotEmpty ? jsonDecode(response.body) : {};
+    if (response.statusCode == 200 && decoded is Map) {
+      if (decoded['data'] is Map) {
+        return Map<String, dynamic>.from(decoded['data'] as Map);
+      }
+      return Map<String, dynamic>.from(decoded);
+    }
+    throw Exception(
+      _apiErrorMessage(decoded, response.statusCode,
+          fallback: 'Failed to load video'),
+    );
+  }
+
+  Future<String> uploadAchieversLobbyVideo({
+    required String filePath,
+    String? filename,
+  }) async {
+    final uri = Uri.parse('$BASE_URL/api/achievers-lobby/upload');
+    final req = http.MultipartRequest('POST', uri);
+    mergeTenantHeaders(req.headers);
+    final token = await getAuthToken();
+    if (token != null && token.isNotEmpty) {
+      req.headers['Authorization'] = 'Bearer $token';
+    }
+    req.files.add(
+      await http.MultipartFile.fromPath(
+        'video',
+        filePath,
+        filename: filename ?? filePath.split(Platform.pathSeparator).last,
+      ),
+    );
+    final streamed = await req.send().timeout(const Duration(minutes: 3));
+    final response = await http.Response.fromStream(streamed);
+    final decoded =
+        response.body.isNotEmpty ? jsonDecode(response.body) : {};
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (decoded is Map && decoded['url'] != null) {
+        return decoded['url'].toString();
+      }
+    }
+    throw Exception(
+      _apiErrorMessage(decoded, response.statusCode,
+          fallback: 'Failed to upload video'),
+    );
+  }
+
+  Future<Map<String, dynamic>> submitAchieversLobby({
+    required String kind,
+    required String name,
+    required String mobile,
+    required String category,
+    required String videoUrl,
+    String address = '',
+    String title = '',
+    String description = '',
+  }) async {
+    final response = await http.post(
+      Uri.parse('$BASE_URL/api/achievers-lobby/submit'),
+      headers: _publicJsonHeaders(),
+      body: jsonEncode({
+        'kind': kind,
+        'name': name,
+        'mobile': mobile,
+        'category': category,
+        'video_url': videoUrl,
+        'address': address,
+        'title': title,
+        'description': description,
+      }),
+    );
+    final decoded =
+        response.body.isNotEmpty ? jsonDecode(response.body) : {};
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded['data'] ?? decoded);
+      }
+      return {};
+    }
+    throw Exception(
+      _apiErrorMessage(decoded, response.statusCode,
+          fallback: 'Failed to submit video'),
+    );
+  }
 }

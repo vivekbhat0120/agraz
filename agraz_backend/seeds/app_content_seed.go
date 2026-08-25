@@ -85,6 +85,7 @@ func SeedToolsMenus() {
 			{MenuName: "App Contents", URL: "/app-contents", Icon: "FileText", SortOrder: 4, IsActive: true, MenuType: "main"},
 			{MenuName: "Dairy", URL: "/dairy", Icon: "Milk", SortOrder: 5, IsActive: true, MenuType: "main"},
 			{MenuName: "Documents", URL: "/documents", Icon: "FolderOpen", SortOrder: 6, IsActive: true, MenuType: "main"},
+			{MenuName: "Achievers Lobby", URL: "/achievers-lobby", Icon: "Trophy", SortOrder: 8, IsActive: true, MenuType: "main"},
 		}},
 	}
 
@@ -100,6 +101,7 @@ func SeedToolsMenus() {
 			ensureToolsChild(existing.ID, "Organizations", "/organizations", "Building2", 3)
 			ensureToolsChild(existing.ID, "Dairy", "/dairy", "Milk", 5)
 			ensureToolsChild(existing.ID, "Documents", "/documents", "FolderOpen", 6)
+			ensureToolsChild(existing.ID, "Achievers Lobby", "/achievers-lobby", "Trophy", 8)
 		}
 	}
 }

@@ -95,6 +95,21 @@ class VoiceDictation extends ChangeNotifier {
   }
 }
 
+/// Unfocus, stop speech, and clear fields now and on the next frame
+/// (IME composition can restore text if we only clear once).
+void stopVoiceAndClearFields(List<TextEditingController> controllers) {
+  VoiceDictation.instance.stop();
+  FocusManager.instance.primaryFocus?.unfocus();
+  for (final c in controllers) {
+    c.clear();
+  }
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    for (final c in controllers) {
+      if (c.text.isNotEmpty) c.clear();
+    }
+  });
+}
+
 /// Mic button that fills [controller] via speech-to-text.
 class VoiceMicButton extends StatelessWidget {
   final String fieldId;

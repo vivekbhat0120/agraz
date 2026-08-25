@@ -235,6 +235,36 @@ class _LaborManagementPageState extends State<LaborManagementPage>
     _labourReceivable = null;
   }
 
+  void _resetLabourEntryForm() {
+    stopVoiceAndClearFields([
+      _nameController,
+      _mobileController,
+      _addressController,
+      _daysHourController,
+      _rateController,
+      _labourHeadController,
+      _narrationController,
+      _paidAmountController,
+      _paymentAmountController,
+    ]);
+    _clearLabourerIdentityFields();
+    setState(() {
+      _pending.clear();
+      _selectedDate = DateTime.now();
+      _selectedWorkType = 'Daily Wages';
+      _selectedLocation = 'Farm';
+      _selectedShift = 'fullday';
+      _selectedGender = 'Male';
+      _selectedCategory =
+          _categories.isNotEmpty ? _categories.first : 'Plucking';
+      _searchQuery = '';
+      _extraRent = 0;
+      _extraFood = 0;
+      _extraBonus = 0;
+      _applyShiftDefaultDays('fullday');
+    });
+  }
+
   Future<void> _refreshLabourBalance({String? mobile, String? name}) async {
     final m = (mobile ?? _mobileController.text).trim();
     final n = (name ?? _nameController.text).trim();
@@ -1051,12 +1081,7 @@ class _LaborManagementPageState extends State<LaborManagementPage>
       return;
     }
 
-    setState(() {
-      _paymentAmountController.clear();
-      _narrationController.clear();
-      _selectedDate = DateTime.now();
-    });
-    _clearLabourerIdentityFields();
+    _resetLabourEntryForm();
     await _loadLabors();
     _showSnack(tr('Payment saved'));
   }
@@ -1169,30 +1194,7 @@ class _LaborManagementPageState extends State<LaborManagementPage>
     final data = result['data'];
     final createdCount = data is List ? data.length : _pending.length;
 
-    // Full reset after a successful save so the form is ready for the next
-    // entry (pending queue, narration, labour head, date, work type,
-    // location, shift, gender, category, rate, days, mobile, name, address).
-    setState(() {
-      _pending.clear();
-      _narrationController.clear();
-      _labourHeadController.clear();
-      _daysHourController.clear();
-      _rateController.clear();
-      _paidAmountController.clear();
-      _selectedDate = DateTime.now();
-      _selectedWorkType = 'Daily Wages';
-      _selectedLocation = 'Farm';
-      _selectedShift = 'fullday';
-      _selectedGender = 'Male';
-      _selectedCategory = _categories.isNotEmpty ? _categories.first : 'Plucking';
-      _searchQuery = '';
-      _extraRent = 0;
-      _extraFood = 0;
-      _extraBonus = 0;
-      _applyShiftDefaultDays('fullday');
-    });
-    _clearLabourerIdentityFields();
-    if (mounted) setState(() {});
+    _resetLabourEntryForm();
 
     await _loadLabors();
 
@@ -1271,11 +1273,7 @@ class _LaborManagementPageState extends State<LaborManagementPage>
       return;
     }
 
-    setState(() {
-      _narrationController.clear();
-      _selectedDate = DateTime.now();
-    });
-    _clearLabourerIdentityFields();
+    _resetLabourEntryForm();
     await _loadLabors();
     _showSnack(tr('Tally marked'));
   }

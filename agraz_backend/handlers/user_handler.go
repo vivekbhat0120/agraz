@@ -138,29 +138,30 @@ func GetUsers(c *fiber.Ctx) error {
 	if err := forbidVendorPortal(c); err != nil {
 		return err
 	}
-	pageStr := c.Query("page", "1")
-	limitStr := c.Query("limit", "10")
-	search := c.Query("filter", "")
+	page := c.QueryInt("page", 1)
+	limit := c.QueryInt("limit", 20)
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 20
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	search := strings.TrimSpace(c.Query("filter", ""))
 	approval := strings.ToLower(strings.TrimSpace(c.Query("approval", "all")))
-
-	page := 1
-	limit := 10
-	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
-		page = p
-	}
-	if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
-		limit = l
-	}
 	offset := (page - 1) * limit
 
-	var users []models.User
-	var total int64
 	tid := tenantIDFromCtx(c)
 	query := userDB.Model(&models.User{}).Where("tenant_id = ?", tid)
 
 	if search != "" {
-		searchTerm := "%" + search + "%"
-		query = query.Where("firstname ILIKE ? OR lastname ILIKE ? OR email ILIKE ? OR username ILIKE ?", searchTerm, searchTerm, searchTerm, searchTerm)
+		like := "%" + search + "%"
+		query = query.Where(
+			"(firstname ILIKE ? OR lastname ILIKE ? OR email ILIKE ? OR username ILIKE ? OR COALESCE(usercode, '') ILIKE ? OR COALESCE(mobile_number, '') ILIKE ?)",
+			like, like, like, like, like, like,
+		)
 	}
 	switch approval {
 	case "pending":
@@ -169,19 +170,35 @@ func GetUsers(c *fiber.Ctx) error {
 		query = query.Where("approved = ?", true)
 	}
 
-	if err := query.Count(&total).Error; err != nil {
+	var total int64
+	if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+	totalPages := 1
+	if total > 0 {
+		totalPages = int((total + int64(limit) - 1) / int64(limit))
+	}
+	if page > totalPages {
+		page = totalPages
+		offset = (page - 1) * limit
+	}
+
+	var users []models.User
+	if err := query.Session(&gorm.Session{}).
+		Order("created_at DESC, id DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&users).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	return c.JSON(fiber.Map{
-		"data":  users,
-		"total": total,
-		"page":  page,
-		"limit": limit,
+		"data":        users,
+		"total":       total,
+		"page":        page,
+		"limit":       limit,
+		"total_pages": totalPages,
 	})
 }
 

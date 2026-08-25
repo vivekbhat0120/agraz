@@ -1,17 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Link as LinkIcon, 
-  Search, 
-  User as UserIcon, 
-  Shield, 
-  ChevronRight, 
-  CheckCircle2, 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Link as LinkIcon,
+  Search,
+  Shield,
+  ChevronRight,
+  ChevronLeft,
+  CheckCircle2,
   Loader2,
   Save,
   AlertCircle
 } from 'lucide-react';
 import { getUsers, getRoles, getUserRoles, updateUserRoles } from '../api/api';
 import './UserRoleMap.css';
+
+const PAGE_SIZE = 20;
 
 const UserRoleMap = () => {
   const [users, setUsers] = useState([]);
@@ -21,32 +23,54 @@ const UserRoleMap = () => {
   const [loading, setLoading] = useState(true);
   const [rolesLoading, setRolesLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [message, setMessage] = useState(null);
 
   useEffect(() => {
-    fetchInitialData();
+    const t = setTimeout(() => setSearch(searchInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const rolesResponse = await getRoles();
+        setRoles(rolesResponse.data || []);
+      } catch (err) {
+        console.error("Error fetching roles:", err);
+      }
+    })();
   }, []);
 
-  const fetchInitialData = async () => {
+  const fetchUsersPage = useCallback(async () => {
     setLoading(true);
     try {
-      const [usersResponse, rolesResponse] = await Promise.all([
-        getUsers(1, 100), // Fetch a larger batch for mapping
-        getRoles()
-      ]);
-      setUsers(usersResponse.data || []);
-      setRoles(rolesResponse.data || []);
-      
-      if (usersResponse.data && usersResponse.data.length > 0) {
-        handleUserSelect(usersResponse.data[0]);
-      }
+      const usersResponse = await getUsers(page, PAGE_SIZE, {
+        filter: search || undefined,
+      });
+      const rows = usersResponse.data || [];
+      const count = Number(usersResponse.total) || 0;
+      setUsers(rows);
+      setTotal(count);
+      setTotalPages(Math.max(1, Number(usersResponse.total_pages) || Math.ceil(count / PAGE_SIZE) || 1));
     } catch (err) {
-      console.error("Error fetching initial data:", err);
+      console.error("Error fetching users:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search]);
+
+  useEffect(() => {
+    fetchUsersPage();
+  }, [fetchUsersPage]);
 
   const handleUserSelect = async (user) => {
     setSelectedUser(user);
@@ -54,7 +78,6 @@ const UserRoleMap = () => {
     setMessage(null);
     try {
       const userRoles = await getUserRoles(user.id);
-      // Backend likely returns objects, we need IDs
       const roleIds = (userRoles || []).map(r => r.id || r.role_id);
       setSelectedRoleIds(roleIds);
     } catch (err) {
@@ -65,10 +88,16 @@ const UserRoleMap = () => {
     }
   };
 
+  useEffect(() => {
+    if (!selectedUser && users.length > 0) {
+      handleUserSelect(users[0]);
+    }
+  }, [users, selectedUser]);
+
   const toggleRole = (roleId) => {
-    setSelectedRoleIds(prev => 
-      prev.includes(roleId) 
-        ? prev.filter(id => id !== roleId) 
+    setSelectedRoleIds(prev =>
+      prev.includes(roleId)
+        ? prev.filter(id => id !== roleId)
         : [...prev, roleId]
     );
   };
@@ -88,10 +117,8 @@ const UserRoleMap = () => {
     }
   };
 
-  const filteredUsers = users.filter(user => 
-    `${user.firstname} ${user.lastname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const initials = (user) =>
+    `${(user.firstname || '?').charAt(0)}${(user.lastname || '').charAt(0)}`;
 
   return (
     <div className="user-role-map-page">
@@ -110,9 +137,9 @@ const UserRoleMap = () => {
                <span>{message.text}</span>
              </div>
            )}
-           <button 
-             className="primary-btn" 
-             onClick={handleSave} 
+           <button
+             className="primary-btn"
+             onClick={handleSave}
              disabled={saving || !selectedUser}
            >
              {saving ? <Loader2 size={18} className="spinner" /> : <Save size={18} />}
@@ -122,44 +149,53 @@ const UserRoleMap = () => {
       </div>
 
       <div className="mapping-container">
-        {/* Left Side: User List */}
         <div className="user-selection-panel">
           <div className="search-box">
             <Search size={18} />
-            <input 
-              type="text" 
-              placeholder="Filter users..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+            <input
+              type="text"
+              placeholder="Search name, email or phone..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
             />
           </div>
           <div className="user-scroll-list">
             {loading ? (
               <div className="panel-loader"><Loader2 className="spinner" /></div>
-            ) : filteredUsers.length === 0 ? (
+            ) : users.length === 0 ? (
               <div className="empty-panel">No users matching search.</div>
             ) : (
-              filteredUsers.map(user => (
-                <div 
-                  key={user.id} 
+              users.map(user => (
+                <div
+                  key={user.id}
                   className={`user-list-item ${selectedUser?.id === user.id ? 'active' : ''}`}
                   onClick={() => handleUserSelect(user)}
                 >
                   <div className="user-avatar">
-                    {user.firstname.charAt(0)}{user.lastname.charAt(0)}
+                    {initials(user)}
                   </div>
                   <div className="user-details">
                     <span className="name">{user.firstname} {user.lastname}</span>
-                    <span className="email">{user.email}</span>
+                    <span className="email">{user.mobile_number || user.email}</span>
                   </div>
                   <ChevronRight size={16} className="chevron" />
                 </div>
               ))
             )}
           </div>
+          <div className="user-panel-pagination">
+            <span>{total} users · page {page}/{totalPages}</span>
+            <div className="pagination-btns">
+              <button type="button" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                <ChevronLeft size={16} />
+              </button>
+              <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Right Side: Role Assignment */}
         <div className="role-assignment-panel">
           <div className="panel-header">
             <h3>Assign Roles to: <span className="highlight">{selectedUser ? `${selectedUser.firstname} ${selectedUser.lastname}` : '...'}</span></h3>
@@ -174,8 +210,8 @@ const UserRoleMap = () => {
             ) : (
               <div className="roles-grid">
                 {roles.map(role => (
-                  <div 
-                    key={role.id} 
+                  <div
+                    key={role.id}
                     className={`role-check-card ${selectedRoleIds.includes(role.id) ? 'checked' : ''}`}
                     onClick={() => toggleRole(role.id)}
                   >

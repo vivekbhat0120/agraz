@@ -695,7 +695,12 @@ class AppField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final multi = maxLines > 1 || (minLines ?? 1) > 1;
+    // Flutter asserts minLines <= maxLines. A 2-line field (Dairy narration)
+    // used to pick minLines: 3 whenever maxLines > 1.
+    final cap = maxLines < 1 ? 1 : maxLines;
+    final fallbackMin = cap > 1 ? (cap < 3 ? cap : 3) : 1;
+    final linesMin = (minLines ?? fallbackMin).clamp(1, cap).toInt();
+    final multi = cap > 1 || linesMin > 1;
     return TextFormField(
       controller: controller,
       onTap: onTap,
@@ -703,8 +708,8 @@ class AppField extends StatelessWidget {
       keyboardType: multi
           ? TextInputType.multiline
           : keyboardType,
-      minLines: minLines ?? (multi ? 3 : 1),
-      maxLines: maxLines,
+      minLines: linesMin,
+      maxLines: cap,
       inputFormatters: inputFormatters,
       validator: validator,
       onChanged: onChanged,

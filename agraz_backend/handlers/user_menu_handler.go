@@ -13,11 +13,10 @@ import (
 // based on their assigned roles and permissions.
 func GetCurrentUserMenuTree(c *fiber.Ctx) error {
 	// 1. Get User ID from context (set by auth middleware)
-	userIDVal := c.Locals("user_id")
-	if userIDVal == nil {
+	userID, ok := userIDFromCtx(c)
+	if !ok || userID == 0 {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
-	userID := uint(userIDVal.(float64)) // JWT claims are float64
 
 	var currentUser models.User
 	if err := userDB.Select("id", "vendor_id", "tenant_id").First(&currentUser, userID).Error; err != nil {
@@ -45,7 +44,7 @@ func GetCurrentUserMenuTree(c *fiber.Ctx) error {
 		// Assuming userDB or rolemanageDB points to the same DB instance
 		if err := userDB.Where("id IN ?", roleIDs).Find(&roles).Error; err == nil {
 			for _, r := range roles {
-				if r.RoleName == "Super Admin" {
+				if r.RoleName == "Super Admin" || r.RoleName == "Admin" {
 					isSuperAdmin = true
 					break
 				}

@@ -145,6 +145,8 @@ func featureForPath(path string) string {
 		return "event_manage"
 	case strings.HasPrefix(p, "feedbacks"):
 		return "feedback"
+	case strings.HasPrefix(p, "achievers-lobby"):
+		return "achievers_lobby"
 	case strings.HasPrefix(p, "store/cart"):
 		return "buy_sell"
 	default:

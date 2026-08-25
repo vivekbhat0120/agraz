@@ -12,6 +12,7 @@ import (
 	"erp.local/backend/seeds"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
 func init() {
@@ -73,6 +74,8 @@ func init() {
 		&models.ManagedEvent{},
 		&models.WeatherReport{},
 		&models.WeatherDaily{},
+		&models.AchieversLobbyCategory{},
+		&models.AchieversLobbyItem{},
 	)
 	seeds.SeedAll()
 }
@@ -111,12 +114,14 @@ func main() {
 	handler.SetDocumentDB(initializers.DB)
 	handler.SetEventDB(initializers.DB)
 	handler.SetWeatherDB(initializers.DB)
+	handler.SetAchieversLobbyDB(initializers.DB)
 	handler.StartWeatherScheduler()
 
 	// set up fiber (large body limit for multi-image uploads)
 	app := fiber.New(fiber.Config{
-		BodyLimit: 64 * 1024 * 1024,
+		BodyLimit: 128 * 1024 * 1024,
 	})
+	app.Use(recover.New())
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
@@ -177,6 +182,14 @@ func main() {
 	api.Get("/weather/locations", handler.GetWeatherLocationsPublic)
 	api.Get("/weather/cron", handler.WeatherCronRefresh)
 	api.Post("/weather/cron", handler.WeatherCronRefresh)
+
+	// Achievers Lobby (public browse + anyone can submit a video for approval)
+	api.Get("/achievers-lobby/latest", handler.GetLatestAchieversLobbyPublic)
+	api.Get("/achievers-lobby/categories", handler.ListAchieversLobbyCategoriesPublic)
+	api.Get("/achievers-lobby", handler.ListAchieversLobbyPublic)
+	api.Get("/achievers-lobby/:id", handler.GetAchieversLobbyPublic)
+	api.Post("/achievers-lobby/upload", handler.UploadAchieversLobbyVideoPublic)
+	api.Post("/achievers-lobby/submit", handler.SubmitAchieversLobbyPublic)
 
 	// Use Middleware
 	api.Use(middleware.Protected())
@@ -547,6 +560,18 @@ func main() {
 	api.Delete("/admin/events/:id", handler.AdminDeleteEvent)
 
 	api.Post("/admin/weather/refresh", handler.AdminRefreshWeather)
+
+	api.Get("/admin/achievers-lobby/categories", handler.AdminListLobbyCategories)
+	api.Post("/admin/achievers-lobby/categories", handler.AdminCreateLobbyCategory)
+	api.Put("/admin/achievers-lobby/categories/:id", handler.AdminUpdateLobbyCategory)
+	api.Delete("/admin/achievers-lobby/categories/:id", handler.AdminDeleteLobbyCategory)
+	api.Post("/admin/achievers-lobby/upload", handler.AdminUploadAchieversLobbyVideo)
+	api.Get("/admin/achievers-lobby", handler.AdminListAchieversLobby)
+	api.Get("/admin/achievers-lobby/:id", handler.AdminGetAchieversLobby)
+	api.Post("/admin/achievers-lobby", handler.AdminCreateAchieversLobby)
+	api.Put("/admin/achievers-lobby/:id", handler.AdminUpdateAchieversLobby)
+	api.Patch("/admin/achievers-lobby/:id/status", handler.AdminSetAchieversLobbyStatus)
+	api.Delete("/admin/achievers-lobby/:id", handler.AdminDeleteAchieversLobby)
 
 	// start server
 	port := os.Getenv("PORT")

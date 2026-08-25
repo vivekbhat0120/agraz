@@ -228,6 +228,38 @@
   color: var(--text-muted);
 }
 
+.user-panel-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.user-panel-pagination .pagination-btns {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.user-panel-pagination button {
+  padding: 0.35rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-panel-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 1100px) {
   .mapping-container {
     grid-template-columns: 1fr;

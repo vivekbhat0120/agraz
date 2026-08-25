@@ -49,7 +49,10 @@ String dairyLiters(dynamic v) {
 }
 
 class DairyPage extends StatefulWidget {
-  const DairyPage({super.key});
+  const DairyPage({super.key, this.skipBootstrap = false});
+
+  /// When true, skip login/API so widget tests can pump the Entry form.
+  final bool skipBootstrap;
 
   @override
   State<DairyPage> createState() => _DairyPageState();
@@ -88,7 +91,11 @@ class _DairyPageState extends State<DairyPage>
     });
     _qtyCtrl.addListener(_recalcAmount);
     _rateCtrl.addListener(_recalcAmount);
-    _bootstrap();
+    if (widget.skipBootstrap) {
+      _loading = false;
+    } else {
+      _bootstrap();
+    }
   }
 
   @override

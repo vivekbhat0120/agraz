@@ -28,7 +28,10 @@ String dairyOwnerKindLabel(String kind) {
 }
 
 class DairyOwnerPage extends StatefulWidget {
-  const DairyOwnerPage({super.key});
+  const DairyOwnerPage({super.key, this.skipBootstrap = false});
+
+  /// When true, skip login/API so widget tests can pump the Entry form.
+  final bool skipBootstrap;
 
   @override
   State<DairyOwnerPage> createState() => _DairyOwnerPageState();
@@ -75,7 +78,11 @@ class _DairyOwnerPageState extends State<DairyOwnerPage>
     });
     _qtyCtrl.addListener(_recalcAmount);
     _rateCtrl.addListener(_recalcAmount);
-    _bootstrap();
+    if (widget.skipBootstrap) {
+      _loading = false;
+    } else {
+      _bootstrap();
+    }
   }
 
   @override

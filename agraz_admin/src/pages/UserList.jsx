@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Users, 
   Search, 
@@ -38,7 +38,14 @@ const UserList = () => {
   
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const limit = 10;
+  const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(20);
+  const [searchInput, setSearchInput] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -47,14 +54,18 @@ const UserList = () => {
         approval: approvalFilter,
         filter: search.trim() || undefined,
       });
-      setUsers(data.data || []);
-      setTotalPages(Math.ceil(data.total / limit) || 1);
+      const rows = Array.isArray(data?.data) ? data.data : [];
+      const count = Number(data?.total) || 0;
+      const pages = Number(data?.total_pages) || Math.ceil(count / limit) || 1;
+      setUsers(rows);
+      setTotal(count);
+      setTotalPages(Math.max(1, pages));
     } catch (err) {
       console.error("Error fetching users:", err);
     } finally {
       setLoading(false);
     }
-  }, [page, approvalFilter, search]);
+  }, [page, limit, approvalFilter, search]);
 
   useEffect(() => {
     fetchUsers();
@@ -62,7 +73,32 @@ const UserList = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [approvalFilter, search]);
+  }, [approvalFilter, search, limit]);
+
+  const rangeLabel = useMemo(() => {
+    if (total === 0) return 'No users';
+    const from = (page - 1) * limit + 1;
+    const to = Math.min(page * limit, total);
+    return `Showing ${from}–${to} of ${total}`;
+  }, [page, limit, total]);
+
+  const pageNumbers = useMemo(() => {
+    const pages = [];
+    const maxButtons = 7;
+    if (totalPages <= maxButtons) {
+      for (let i = 1; i <= totalPages; i += 1) pages.push(i);
+      return pages;
+    }
+    const add = (n) => { if (!pages.includes(n)) pages.push(n); };
+    add(1);
+    const start = Math.max(2, page - 1);
+    const end = Math.min(totalPages - 1, page + 1);
+    if (start > 2) pages.push('…');
+    for (let i = start; i <= end; i += 1) add(i);
+    if (end < totalPages - 1) pages.push('…');
+    add(totalPages);
+    return pages;
+  }, [page, totalPages]);
 
   const openModal = (user = null) => {
     if (user) {
@@ -188,18 +224,42 @@ const UserList = () => {
             <Search size={18} />
             <input
               type="text"
-              placeholder="Search users by name or email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, email, phone or user code..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
             />
           </div>
           <div className="pagination-controls">
+            <span className="pagination-count">{rangeLabel}</span>
+            <label className="page-size">
+              Per page
+              <select value={limit} onChange={(e) => setLimit(Number(e.target.value))}>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </label>
             <span>Page {page} of {totalPages}</span>
             <div className="pagination-btns">
-              <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+              <button type="button" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
                 <ChevronLeft size={18} />
               </button>
-              <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
+              {pageNumbers.map((n, i) => (
+                n === '…' ? (
+                  <span key={`e${i}`} className="page-ellipsis">…</span>
+                ) : (
+                  <button
+                    key={n}
+                    type="button"
+                    className={n === page ? 'page-num active' : 'page-num'}
+                    onClick={() => setPage(n)}
+                  >
+                    {n}
+                  </button>
+                )
+              ))}
+              <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
                 <ChevronRight size={18} />
               </button>
             </div>
@@ -274,6 +334,17 @@ const UserList = () => {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="list-footer">
+          <span className="pagination-count">{rangeLabel}</span>
+          <div className="pagination-btns">
+            <button type="button" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              <ChevronLeft size={18} />
+            </button>
+            <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+              <ChevronRight size={18} />
+            </button>
+          </div>
         </div>
       </div>
 

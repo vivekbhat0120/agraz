@@ -16,6 +16,7 @@ class AppFeatureCatalog {
   static const services = 'services';
   static const buySell = 'buy_sell';
   static const farmerEducation = 'farmer_education';
+  static const achieversLobby = 'achievers_lobby';
   static const government = 'government';
   static const rtc = 'rtc';
   static const documents = 'documents';
@@ -38,6 +39,7 @@ class AppFeatureCatalog {
     (key: services, label: 'General Services'),
     (key: buySell, label: 'Buy & Sell'),
     (key: farmerEducation, label: 'Farmer Education'),
+    (key: achieversLobby, label: 'Achievers Lobby'),
     (key: government, label: 'Government Facilities'),
     (key: rtc, label: 'RTC Entry'),
     (key: documents, label: 'Documents'),

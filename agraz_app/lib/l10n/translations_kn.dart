@@ -229,6 +229,38 @@ const Map<String, String> kKannadaTranslations = {
   'General Services': 'ಸಾಮಾನ್ಯ ಸೇವೆಗಳು',
   'Buy & Sell': 'ಖರೀದಿ ಮತ್ತು ಮಾರಾಟ',
   'Farmer Education': 'ರೈತ ಶಿಕ್ಷಣ',
+  'Achievers Lobby': 'ಸಾಧಕರ ಜಾಗುಳಿ',
+  'Lobby': 'ಜಾಗುಳಿ',
+  'Achievers': 'ಸಾಧಕರು',
+  'Innovations': 'ನಾವೀನ್ಯತೆಗಳು',
+  'Achiever': 'ಸಾಧಕ',
+  'Innovation': 'ನಾವೀನ್ಯತೆ',
+  'Upload video': 'ವೀಡಿಯೊ ಅಪ್‌ಲೋಡ್',
+  'Select video': 'ವೀಡಿಯೊ ಆಯ್ಕೆಮಾಡಿ',
+  'Search by name': 'ಹೆಸರಿನಿಂದ ಹುಡುಕಿ',
+  'Latest': 'ಇತ್ತೀಚಿನ',
+  'Latest in Achievers Lobby': 'ಸಾಧಕರ ಜಾಗುಳಿಯಲ್ಲಿ ಇತ್ತೀಚಿನ',
+  'No videos yet': 'ಇನ್ನೂ ವೀಡಿಯೊಗಳಿಲ್ಲ',
+  'Approved videos will appear here. You can upload your own video for review.':
+      'ಅನುಮೋದಿತ ವೀಡಿಯೊಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ. ನೀವು ನಿಮ್ಮ ವೀಡಿಯೊವನ್ನು ಪರಿಶೀಲನೆಗಾಗಿ ಅಪ್‌ಲೋಡ್ ಮಾಡಬಹುದು.',
+  'Anyone can share a video. Admin will approve before it is shown.':
+      'ಯಾರು ಬೇಕಾದರೂ ವೀಡಿಯೊ ಹಂಚಿಕೊಳ್ಳಬಹುದು. ತೋರಿಸುವ ಮೊದಲು ನಿರ್ವಾಹಕರು ಅನುಮೋದಿಸುತ್ತಾರೆ.',
+  'Please select a video': 'ದಯವಿಟ್ಟು ವೀಡಿಯೊ ಆಯ್ಕೆಮಾಡಿ',
+  'Video must be under 80 MB': 'ವೀಡಿಯೊ 80 MB ಒಳಗೆ ಇರಬೇಕು',
+  'Submitted for approval. It will appear after admin review.':
+      'ಅನುಮೋದನೆಗಾಗಿ ಸಲ್ಲಿಸಲಾಗಿದೆ. ನಿರ್ವಾಹಕರ ಪರಿಶೀಲನೆಯ ನಂತರ ಕಾಣಿಸುತ್ತದೆ.',
+  'Optional short title': 'ಐಚ್ಛಿಕ ಚಿಕ್ಕ ಶೀರ್ಷಿಕೆ',
+  'Watch videos of farm achievers and innovations, or upload your own for the community.':
+      'ಕೃಷಿ ಸಾಧಕರು ಮತ್ತು ನಾವೀನ್ಯತೆಗಳ ವೀಡಿಯೊಗಳನ್ನು ನೋಡಿ, ಅಥವಾ ಸಮುದಾಯಕ್ಕಾಗಿ ನಿಮ್ಮದನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.',
+  'Browse Achievers and Innovations tabs':
+      'ಸಾಧಕರು ಮತ್ತು ನಾವೀನ್ಯತೆ ಟ್ಯಾಬ್‌ಗಳನ್ನು ನೋಡಿ',
+  'Latest videos show first when you open the menu':
+      'ಮೆನು ತೆರೆದಾಗ ಇತ್ತೀಚಿನ ವೀಡಿಯೊಗಳು ಮೊದಲು ಕಾಣಿಸುತ್ತವೆ',
+  'Search by category and name': 'ವರ್ಗ ಮತ್ತು ಹೆಸರಿನಿಂದ ಹುಡುಕಿ',
+  'Upload a video with your name and mobile for admin approval':
+      'ನಿಮ್ಮ ಹೆಸರು ಮತ್ತು ಮೊಬೈಲ್‌ನೊಂದಿಗೆ ವೀಡಿಯೊ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ, ನಿರ್ವಾಹಕರ ಅನುಮೋದನೆಗಾಗಿ',
+  'Open Achievers or Innovations, watch the latest videos, search by name or category, and upload your own video for approval.':
+      'ಸಾಧಕರು ಅಥವಾ ನಾವೀನ್ಯತೆ ತೆರೆಯಿರಿ, ಇತ್ತೀಚಿನ ವೀಡಿಯೊಗಳನ್ನು ನೋಡಿ, ಹೆಸರು ಅಥವಾ ವರ್ಗದಿಂದ ಹುಡುಕಿ, ಮತ್ತು ಅನುಮೋದನೆಗಾಗಿ ನಿಮ್ಮ ವೀಡಿಯೊ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.',
   'Government Facilities': 'ಸರ್ಕಾರಿ ಸೌಲಭ್ಯಗಳು',
   'RTC Entry': 'ಆರ್‌ಟಿಸಿ ನಮೂದು',
   'RTC': 'ಆರ್‌ಟಿಸಿ',

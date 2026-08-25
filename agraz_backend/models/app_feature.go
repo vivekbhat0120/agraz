@@ -22,6 +22,7 @@ var AppFeatures = []AppFeature{
 	{Key: "services", Label: "General Services"},
 	{Key: "buy_sell", Label: "Buy & Sell"},
 	{Key: "farmer_education", Label: "Farmer Education"},
+	{Key: "achievers_lobby", Label: "Achievers Lobby"},
 	{Key: "government", Label: "Government Facilities"},
 	{Key: "rtc", Label: "RTC Entry"},
 	{Key: "documents", Label: "Documents"},

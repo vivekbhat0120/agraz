@@ -82,7 +82,7 @@ export const getVendorUsers = async (params = {}) => {
 };
 
 // Users
-export const getUsers = async (page = 1, limit = 10, opts = {}) => {
+export const getUsers = async (page = 1, limit = 20, opts = {}) => {
   const params = { page, limit };
   if (opts.approval && opts.approval !== 'all') params.approval = opts.approval;
   if (opts.filter) params.filter = opts.filter;
@@ -706,5 +706,35 @@ export const updateAdminEvent = async (id, data) =>
   (await api.put(`/admin/events/${id}`, data)).data;
 export const deleteAdminEvent = async (id, params = {}) =>
   (await api.delete(`/admin/events/${id}`, { params })).data;
+
+// Admin Achievers Lobby
+export const getAdminAchieversLobby = async (params = {}) =>
+  (await api.get("/admin/achievers-lobby", { params })).data;
+export const getAdminAchieversLobbyItem = async (id) =>
+  (await api.get(`/admin/achievers-lobby/${id}`)).data;
+export const createAdminAchieversLobby = async (data) =>
+  (await api.post("/admin/achievers-lobby", data)).data;
+export const updateAdminAchieversLobby = async (id, data) =>
+  (await api.put(`/admin/achievers-lobby/${id}`, data)).data;
+export const deleteAdminAchieversLobby = async (id) =>
+  (await api.delete(`/admin/achievers-lobby/${id}`)).data;
+export const setAdminAchieversLobbyStatus = async (id, status) =>
+  (await api.patch(`/admin/achievers-lobby/${id}/status`, { status })).data;
+export const uploadAdminAchieversLobbyVideo = async (file) => {
+  const fd = new FormData();
+  fd.append("video", file);
+  const response = await api.post("/admin/achievers-lobby/upload", fd, {
+    timeout: 180000,
+  });
+  return response.data;
+};
+export const getAdminLobbyCategories = async (params = {}) =>
+  (await api.get("/admin/achievers-lobby/categories", { params })).data;
+export const createAdminLobbyCategory = async (data) =>
+  (await api.post("/admin/achievers-lobby/categories", data)).data;
+export const updateAdminLobbyCategory = async (id, data) =>
+  (await api.put(`/admin/achievers-lobby/categories/${id}`, data)).data;
+export const deleteAdminLobbyCategory = async (id) =>
+  (await api.delete(`/admin/achievers-lobby/categories/${id}`)).data;
 
 export default api;
