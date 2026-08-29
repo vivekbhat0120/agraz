@@ -84,7 +84,8 @@ func syncLaborShare(sourceUID uint, labor models.Labor, extra *models.LaborExtra
 	if laborDB == nil || labor.ID == 0 || sourceUID == 0 {
 		return
 	}
-	if normalizeLaborEntryKind(labor.EntryKind) == "tally" {
+	if normalizeLaborEntryKind(labor.EntryKind) == "tally" ||
+		normalizeLaborEntryKind(labor.EntryKind) == "opening" {
 		cancelPendingLaborShares(labor.ID)
 		return
 	}

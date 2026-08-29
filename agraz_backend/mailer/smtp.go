@@ -6,6 +6,7 @@ import (
 	"net/smtp"
 	"os"
 	"strings"
+	"time"
 )
 
 func Configured() bool {
@@ -28,7 +29,23 @@ func getenv(key, fallback string) string {
 	return v
 }
 
-// Send delivers a plain-text email through SMTP (Gmail app password on port 587).
+func buildMessage(fromName, from, to, subject, body string) string {
+	fromHeader := fmt.Sprintf("%s <%s>", fromName, from)
+	return strings.Join([]string{
+		"From: " + fromHeader,
+		"To: " + to,
+		"Subject: " + subject,
+		"Date: " + time.Now().UTC().Format(time.RFC1123Z),
+		"MIME-Version: 1.0",
+		"Content-Type: text/plain; charset=UTF-8",
+		"",
+		body,
+	}, "\r\n")
+}
+
+// Send delivers a plain-text email through SMTP.
+// The authenticated Gmail account (SMTP_USER) is the sender only.
+// [to] is the only recipient — the customer — never the SMTP login.
 func Send(to, subject, body string) error {
 	host := getenv("SMTP_HOST", "smtp.gmail.com")
 	port := getenv("SMTP_PORT", "587")
@@ -47,18 +64,9 @@ func Send(to, subject, body string) error {
 		return fmt.Errorf("recipient is required")
 	}
 
-	fromHeader := fmt.Sprintf("%s <%s>", fromName, from)
-	msg := strings.Join([]string{
-		"From: " + fromHeader,
-		"To: " + to,
-		"Subject: " + subject,
-		"MIME-Version: 1.0",
-		"Content-Type: text/plain; charset=UTF-8",
-		"",
-		body,
-	}, "\r\n")
-
+	msg := buildMessage(fromName, from, to, subject, body)
 	addr := net.JoinHostPort(host, port)
 	auth := smtp.PlainAuth("", user, pass, host)
-	return smtp.SendMail(addr, auth, from, []string{to}, []byte(msg))
+	// Envelope sender must be the Gmail login. Recipients are only [to].
+	return smtp.SendMail(addr, auth, user, []string{to}, []byte(msg))
 }

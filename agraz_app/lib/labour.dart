@@ -66,6 +66,8 @@ class _LaborManagementPageState extends State<LaborManagementPage>
   final TextEditingController _narrationController = TextEditingController();
   final TextEditingController _paidAmountController = TextEditingController();
   final TextEditingController _paymentAmountController = TextEditingController();
+  final TextEditingController _obPayableController = TextEditingController();
+  final TextEditingController _obPaymentController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
   String _selectedWorkType = 'Daily Wages';
@@ -73,7 +75,7 @@ class _LaborManagementPageState extends State<LaborManagementPage>
   String _selectedShift = 'fullday';
   String _selectedGender = 'Male';
   String _selectedCategory = 'Plucking';
-  /// Top mode: Payable / Labour Entry, Payment, or Mark Tally.
+  /// Top mode: Payable / Labour Entry, Payment, or OB/Tally.
   String _entryMode = 'Payable';
   /// Outstanding balance for selected labourer (green chip).
   double? _labourBalance;
@@ -168,6 +170,8 @@ class _LaborManagementPageState extends State<LaborManagementPage>
     _narrationController.dispose();
     _paidAmountController.dispose();
     _paymentAmountController.dispose();
+    _obPayableController.dispose();
+    _obPaymentController.dispose();
     super.dispose();
   }
 
@@ -246,6 +250,8 @@ class _LaborManagementPageState extends State<LaborManagementPage>
       _narrationController,
       _paidAmountController,
       _paymentAmountController,
+      _obPayableController,
+      _obPaymentController,
     ]);
     _clearLabourerIdentityFields();
     setState(() {
@@ -347,10 +353,10 @@ class _LaborManagementPageState extends State<LaborManagementPage>
 
       final cat = r['category']?.toString() ?? '';
       final kind = (r['entry_kind']?.toString() ?? 'payable').toLowerCase();
-      // Prefer rates from work/opening rows (not payment/tally).
+      // Prefer rates from work rows (not payment / opening / tally).
       if (cat.isNotEmpty &&
           !latestMap.containsKey(cat) &&
-          (kind == 'payable' || kind == 'opening')) {
+          (kind == 'payable')) {
         final wage = r['wage'];
         final value = wage is num
             ? wage.toDouble()
@@ -1208,13 +1214,19 @@ class _LaborManagementPageState extends State<LaborManagementPage>
     final name = _nameController.text.trim();
     final mobile = _mobileController.text.trim();
     final narration = _narrationController.text.trim();
+    final payable = double.tryParse(_obPayableController.text.trim()) ?? 0;
+    final payment = double.tryParse(_obPaymentController.text.trim()) ?? 0;
 
     if (name.isEmpty) {
       _showSnack(tr('Enter labourer name'), error: true);
       return;
     }
+    if (payable < 0 || payment < 0) {
+      _showSnack(tr('Amount cannot be negative'), error: true);
+      return;
+    }
     if (narration.isEmpty) {
-      _showSnack(tr('Enter tally description'), error: true);
+      _showSnack(tr('Enter narration'), error: true);
       return;
     }
     if (mobile.isNotEmpty && mobile.length != 10) {
@@ -1233,15 +1245,17 @@ class _LaborManagementPageState extends State<LaborManagementPage>
       }
     }
 
+    final net = payable - payment;
+    final isTally = net == 0;
     final payload = <String, dynamic>{
       'name': name,
       if (mobile.isNotEmpty) 'mobile': mobile,
-      'wage': 0,
+      'wage': isTally ? 0 : net,
       'hours': 1,
       'number_of_labours': 1,
-      'entry_kind': 'tally',
+      'entry_kind': isTally ? 'tally' : 'opening',
       'shift': 'fullday',
-      'category': 'Tally',
+      'category': isTally ? 'Tally' : 'Opening Balance',
       'gender': _selectedGender,
       'work_type': 'Daily Wages',
       'location': _selectedLocation ?? 'Farm',
@@ -1264,7 +1278,8 @@ class _LaborManagementPageState extends State<LaborManagementPage>
     setState(() => _submitting = false);
 
     if (result['success'] != true) {
-      final msg = result['message']?.toString() ?? tr('Failed to save tally');
+      final msg =
+          result['message']?.toString() ?? tr('Failed to save OB/Tally');
       if (_isAuthFailure(result)) {
         await _showJwtExpiredDialog(msg);
       } else {
@@ -1275,7 +1290,9 @@ class _LaborManagementPageState extends State<LaborManagementPage>
 
     _resetLabourEntryForm();
     await _loadLabors();
-    _showSnack(tr('Tally marked'));
+    _showSnack(
+      isTally ? tr('Tally marked — account restarts at 0') : tr('Opening saved — account restarts from this date'),
+    );
   }
 
   bool _isAuthFailure(Map<String, dynamic> result) {
@@ -1417,7 +1434,7 @@ class _LaborManagementPageState extends State<LaborManagementPage>
   double get _totalLaborCost {
     return _filteredLaborers.fold(
       0.0,
-      (sum, l) => sum + (l.isTally ? 0.0 : l.totalCost),
+      (sum, l) => sum + (l.isTally || l.isOpening ? 0.0 : l.totalCost),
     );
   }
 
@@ -1544,7 +1561,7 @@ class _LaborManagementPageState extends State<LaborManagementPage>
             child: _modeTab(
               'Tally',
               Icons.fact_check_rounded,
-              tr('Mark Tally'),
+              tr('OB/Tally'),
             ),
           ),
         ],
@@ -1611,6 +1628,29 @@ class _LaborManagementPageState extends State<LaborManagementPage>
     );
   }
 
+  Widget _buildObTallyHint() {
+    final payable = double.tryParse(_obPayableController.text.trim()) ?? 0;
+    final payment = double.tryParse(_obPaymentController.text.trim()) ?? 0;
+    final net = payable - payment;
+    final String msg;
+    if (net == 0) {
+      msg = tr('Tally — account restarts at 0 from this date');
+    } else if (net > 0) {
+      msg = '${tr('Payable opening')} ₹${net.toStringAsFixed(net == net.roundToDouble() ? 0 : 2)} — ${tr('account restarts from this date')}';
+    } else {
+      msg = '${tr('Payment opening')} ₹${(-net).toStringAsFixed(net == net.roundToDouble() ? 0 : 2)} — ${tr('account restarts from this date')}';
+    }
+    return Text(
+      msg,
+      style: AppText.caption.copyWith(
+        color: net == 0
+            ? AppColors.info
+            : (net > 0 ? AppColors.income : AppColors.expense),
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
   Widget _buildAddFormCard() {
     final isPayment = _entryMode == 'Payment';
     final isTally = _entryMode == 'Tally';
@@ -1625,8 +1665,10 @@ class _LaborManagementPageState extends State<LaborManagementPage>
             SizedBox(height: 14),
             SectionTitle(
               icon: Icons.fact_check_rounded,
-              title: tr('Mark Tally'),
-              subtitle: tr('Record agreement note — no amount'),
+              title: tr('OB/Tally'),
+              subtitle: tr(
+                'Both 0 = tally (settled). Any amount starts a new balance from this date.',
+              ),
             ),
             SizedBox(height: 14),
             Row(
@@ -1651,12 +1693,42 @@ class _LaborManagementPageState extends State<LaborManagementPage>
             ],
             SizedBox(height: 14),
             Row(
+              children: [
+                Expanded(
+                  child: AppField(
+                    controller: _obPayableController,
+                    label: tr('Payable'),
+                    hint: tr('We still owe them'),
+                    icon: Icons.trending_up_rounded,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: AppField(
+                    controller: _obPaymentController,
+                    label: tr('Payment'),
+                    hint: tr('Extra already paid'),
+                    icon: Icons.trending_down_rounded,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 6),
+            _buildObTallyHint(),
+            SizedBox(height: 14),
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: AppField(
                     controller: _narrationController,
-                    label: tr('Description'),
+                    label: tr('Narration'),
                     icon: Icons.description_rounded,
                     minLines: 3,
                     maxLines: 8,
@@ -1670,7 +1742,7 @@ class _LaborManagementPageState extends State<LaborManagementPage>
             ),
             SizedBox(height: 14),
             PrimaryButton(
-              label: _submitting ? tr('Saving…') : tr('Save Tally'),
+              label: _submitting ? tr('Saving…') : tr('Save OB/Tally'),
               icon: Icons.save_rounded,
               onPressed: _submitting ? null : _submitLabours,
               loading: _submitting,
@@ -2362,7 +2434,7 @@ class _LaborManagementPageState extends State<LaborManagementPage>
             child: _summaryItem(
               Icons.group_rounded,
               '$entries',
-              'Entries',
+              tr('Number of labour'),
               AppColors.info,
             ),
           ),
@@ -2479,12 +2551,17 @@ class _LaborManagementPageState extends State<LaborManagementPage>
   Widget _laborerCard(Laborer laborer, int index) {
     final cost = laborer.totalCost;
     final isTally = laborer.isTally;
+    final isOpening = laborer.isOpening;
+    final isReset = isTally || isOpening;
+    final isPayment = laborer.isPayment;
+    final resetColor =
+        isOpening && cost < 0 ? AppColors.expense : AppColors.info;
     return AppCard(
       padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.only(bottom: 10),
       radius: 16,
-      color: isTally
-          ? AppColors.info.withValues(alpha: 0.08)
+      color: isReset
+          ? resetColor.withValues(alpha: 0.08)
           : AppColors.surface,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -2496,8 +2573,8 @@ class _LaborManagementPageState extends State<LaborManagementPage>
               height: 46,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: isTally
-                      ? [AppColors.info, AppColors.info.withValues(alpha: 0.75)]
+                  colors: isReset
+                      ? [resetColor, resetColor.withValues(alpha: 0.75)]
                       : AppColors.buttonGradient,
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -2505,7 +2582,7 @@ class _LaborManagementPageState extends State<LaborManagementPage>
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: (isTally ? AppColors.info : AppColors.primary)
+                    color: (isReset ? resetColor : AppColors.primary)
                         .withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
@@ -2513,7 +2590,7 @@ class _LaborManagementPageState extends State<LaborManagementPage>
                 ],
               ),
               child: Icon(
-                isTally ? Icons.fact_check_rounded : Icons.person_rounded,
+                isReset ? Icons.fact_check_rounded : Icons.person_rounded,
                 color: Colors.white,
                 size: 22,
               ),
@@ -2526,7 +2603,7 @@ class _LaborManagementPageState extends State<LaborManagementPage>
                   Text(
                     laborer.name,
                     style: AppText.bodyStrong.copyWith(
-                      color: isTally ? AppColors.info : null,
+                      color: isReset ? resetColor : null,
                     ),
                   ),
                   const SizedBox(height: 5),
@@ -2536,6 +2613,11 @@ class _LaborManagementPageState extends State<LaborManagementPage>
                     children: [
                       if (isTally)
                         _chip(tr('Tally'), AppColors.info)
+                      else if (isOpening)
+                        _chip(
+                          cost < 0 ? tr('Payment') : tr('Payable'),
+                          resetColor,
+                        )
                       else ...[
                         if (laborer.workType.isNotEmpty)
                           _chip(tr(laborer.workType), AppColors.info),
@@ -2562,15 +2644,19 @@ class _LaborManagementPageState extends State<LaborManagementPage>
                               ? (laborer.narration.isEmpty
                                   ? tr('Tally')
                                   : laborer.narration)
-                              : '₹${laborer.wage.toStringAsFixed(0)} × ${laborer.hours}',
+                              : isOpening
+                                  ? '₹${cost.abs().toStringAsFixed(0)}'
+                                  : isPayment
+                                      ? '₹${cost.toStringAsFixed(0)}'
+                                      : '₹${laborer.wage.toStringAsFixed(0)} × ${laborer.hours}',
                           style: AppText.small.copyWith(
-                            color: isTally ? AppColors.info : null,
+                            color: isReset ? resetColor : null,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (!isTally) ...[
+                      if (!isReset && !isPayment) ...[
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -3493,6 +3579,8 @@ class Laborer {
   double get totalCost => wage * hours;
   double get othersTotal => rent + food + bonus;
   bool get isTally => entryKind == 'tally';
+  bool get isPayment => entryKind == 'payment';
+  bool get isOpening => entryKind == 'opening';
 
   factory Laborer.fromJson(Map<String, dynamic> json) {
     DateTime parseDate(dynamic v) {

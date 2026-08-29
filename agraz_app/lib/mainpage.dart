@@ -10,6 +10,7 @@ import 'manage_organization.dart';
 import 'services.dart';
 import 'labour.dart';
 import 'diary.dart';
+import 'daily_summary.dart';
 import 'dairy.dart';
 import 'dairy_owner.dart';
 import 'future_plans.dart';
@@ -521,6 +522,17 @@ class _MainPageState extends State<MainPage> {
                         const DiaryPage(),
                         closeDrawer: true,
                         feature: AppFeatureCatalog.notes,
+                      ),
+                    ),
+                  if (_featureEnabled(AppFeatureCatalog.dailySummary))
+                    _drawerTile(
+                      Icons.menu_book_rounded,
+                      tr('Daily Summary'),
+                      AppColors.primary,
+                      () => _openProtected(
+                        const DailySummaryPage(),
+                        closeDrawer: true,
+                        feature: AppFeatureCatalog.dailySummary,
                       ),
                     ),
                   if (_featureEnabled(AppFeatureCatalog.futurePlans))
@@ -1208,6 +1220,16 @@ class _MainPageState extends State<MainPage> {
         open: () => _openProtected(
           const DiaryPage(),
           feature: AppFeatureCatalog.notes,
+        ),
+      ),
+      (
+        icon: Icons.menu_book_rounded,
+        label: tr('Summary'),
+        color: AppColors.primary,
+        feature: AppFeatureCatalog.dailySummary,
+        open: () => _openProtected(
+          const DailySummaryPage(),
+          feature: AppFeatureCatalog.dailySummary,
         ),
       ),
       (

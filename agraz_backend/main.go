@@ -202,6 +202,8 @@ func main() {
 	api.Get("/my-menus", handler.GetCurrentUserMenuTree)
 	api.Get("/dashboard/stats", handler.GetDashboardStats)
 
+	api.Get("/daily_summary", handler.GetDailySummary)
+
 	api.Get("/family/features", handler.ListAppFeatures)
 	api.Get("/family/members", handler.ListFamilyMembers)
 	api.Post("/family/members", handler.CreateFamilyMember)

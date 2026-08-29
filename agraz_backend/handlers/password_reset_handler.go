@@ -143,11 +143,12 @@ func ForgotPassword(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to save reset code"})
 	}
 
-	if err := sendResetCodeEmail(user.Email, code); err != nil {
+	if err := sendResetCodeEmail(email, code); err != nil {
 		log.Printf("forgot-password email failed for %s: %v", email, err)
 		_ = userDB.Delete(&row).Error
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to send reset code. Please try again."})
 	}
+	log.Printf("forgot-password email sent to %s (from SMTP_USER, not as recipient)", email)
 
 	return c.JSON(fiber.Map{
 		"message":    "A 6-digit code was sent to your email.",

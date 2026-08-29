@@ -7,7 +7,8 @@ import (
 )
 
 // Labor maps to public.labors — daily labour entries from the Agraz mobile app.
-// EntryKind: payable (default work accrual), payment (settlement), opening (opening balance).
+// EntryKind: payable (work), payment (settlement), opening (account reset / opening
+// balance from that date; negative wage = payment/debit opening), tally (reset to zero).
 type Labor struct {
 	ID              uint            `gorm:"primaryKey;autoIncrement" json:"id"`
 	UserID          uint            `gorm:"not null;index;default:0" json:"user_id"`

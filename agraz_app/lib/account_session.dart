@@ -10,6 +10,7 @@ class AppFeatureCatalog {
   static const dairy = 'dairy';
   static const dairyOwner = 'dairy_owner';
   static const notes = 'notes';
+  static const dailySummary = 'daily_summary';
   static const futurePlans = 'future_plans';
   static const market = 'market';
   static const weather = 'weather';
@@ -33,6 +34,7 @@ class AppFeatureCatalog {
     (key: dairy, label: 'Dairy'),
     (key: dairyOwner, label: 'Dairy Owner'),
     (key: notes, label: 'Notes'),
+    (key: dailySummary, label: 'Daily Summary'),
     (key: futurePlans, label: 'Future Plans'),
     (key: market, label: 'Market Reports'),
     (key: weather, label: 'Weather Report'),

@@ -90,6 +90,22 @@ func normalizeLaborEntryKind(kind string) string {
 	return k
 }
 
+// isLaborWorkKind is true for accrued labour work only.
+// Payments are settlements. Opening and tally reset the account from that date
+// and are not labour cost.
+func isLaborWorkKind(kind string) bool {
+	return normalizeLaborEntryKind(kind) == "payable"
+}
+
+func isLaborResetKind(kind string) bool {
+	switch normalizeLaborEntryKind(kind) {
+	case "tally", "opening":
+		return true
+	default:
+		return false
+	}
+}
+
 func validateLaborPayload(body *laborPayload) string {
 	kind := normalizeLaborEntryKind(body.EntryKind)
 	if kind != "payable" && kind != "payment" && kind != "opening" && kind != "tally" {
@@ -101,7 +117,13 @@ func validateLaborPayload(body *laborPayload) string {
 		return "name is required"
 	}
 
-	// Mark tally: description-only note (no amount).
+	// Opening with a zero amount is a tally (accounts settled).
+	if kind == "opening" && body.Wage == 0 {
+		kind = "tally"
+		body.EntryKind = "tally"
+	}
+
+	// Tally: agreement note that resets the account to zero from this date.
 	if kind == "tally" {
 		body.Wage = 0
 		if body.Hours <= 0 {
@@ -140,7 +162,7 @@ func validateLaborPayload(body *laborPayload) string {
 		}
 		body.Narration = strings.TrimSpace(body.Narration)
 		if body.Narration == "" {
-			return "description (narration) is required for tally"
+			return "narration is required for tally"
 		}
 		if body.Date.Time.IsZero() {
 			return "date is required"
@@ -149,7 +171,7 @@ func validateLaborPayload(body *laborPayload) string {
 		return ""
 	}
 
-	if body.Wage <= 0 {
+	if kind != "opening" && body.Wage <= 0 {
 		return "rate (wage) must be greater than zero"
 	}
 
@@ -203,6 +225,9 @@ func validateLaborPayload(body *laborPayload) string {
 			body.Location = strings.TrimSpace(body.Location)
 		}
 		body.Narration = strings.TrimSpace(body.Narration)
+		if kind == "opening" && body.Narration == "" {
+			body.Narration = "Opening Balance"
+		}
 		if body.Date.Time.IsZero() {
 			return "date is required"
 		}
@@ -413,7 +438,7 @@ func CreateLabor(c *fiber.Ctx) error {
 	syncLaborShare(uid, row, row.Extra)
 
 	resp := fiber.Map{"message": "Laborer added successfully", "data": row}
-	if body.PaidAmount > 0 && body.EntryKind != "tally" {
+	if body.PaidAmount > 0 && body.EntryKind != "tally" && body.EntryKind != "opening" {
 		payment, err := createLaborPaymentRow(uid, &body, body.PaidAmount)
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{
@@ -498,7 +523,7 @@ func CreateLaborsBatch(c *fiber.Ctx) error {
 		syncLaborShare(uid, row, row.Extra)
 		rows = append(rows, row)
 
-		if body.PaidAmount > 0 && body.EntryKind != "tally" {
+		if body.PaidAmount > 0 && body.EntryKind != "tally" && body.EntryKind != "opening" {
 			payment, err := createLaborPaymentRow(uid, body, body.PaidAmount)
 			if err != nil {
 				return c.Status(500).JSON(fiber.Map{
@@ -685,7 +710,7 @@ func BulkUpdateLaborRate(c *fiber.Ctx) error {
 	toEnd := time.Date(to.Year(), to.Month(), to.Day(), 23, 59, 59, 0, to.Location())
 
 	q := scopeByUserID(laborDB.Model(&models.Labor{}), uid).
-		Where("entry_kind IN ?", []string{"payable", "opening"}).
+		Where("entry_kind IN ?", []string{"payable"}).
 		Where("date >= ? AND date <= ?", from, toEnd)
 	q = applyLaborPersonFilter(q, mobile, name)
 

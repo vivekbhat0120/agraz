@@ -16,6 +16,7 @@ var AppFeatures = []AppFeature{
 	{Key: "dairy", Label: "Dairy"},
 	{Key: "dairy_owner", Label: "Dairy Owner"},
 	{Key: "notes", Label: "Notes"},
+	{Key: "daily_summary", Label: "Daily Summary"},
 	{Key: "future_plans", Label: "Future Plans"},
 	{Key: "market", Label: "Market Reports"},
 	{Key: "weather", Label: "Weather Report"},

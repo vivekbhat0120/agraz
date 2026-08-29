@@ -16,6 +16,83 @@ const laborPersonKeyExpr = `CASE
 	ELSE 'n:' || LOWER(TRIM(name))
 END`
 
+// laborWorkKindSQL matches accrued labour work only.
+// Payments, tallies, and opening (account reset) must not be added into hours.
+const laborWorkKindSQL = `COALESCE(entry_kind,'payable') = 'payable'`
+
+const laborResetKindSQL = `COALESCE(entry_kind,'payable') IN ('tally','opening')`
+
+func laborPersonKeyExprOn(table string) string {
+	if table == "" {
+		return laborPersonKeyExpr
+	}
+	return fmt.Sprintf(`CASE
+	WHEN %[1]s.mobile IS NOT NULL AND TRIM(%[1]s.mobile) <> '' THEN 'm:' || TRIM(%[1]s.mobile)
+	ELSE 'n:' || LOWER(TRIM(%[1]s.name))
+END`, table)
+}
+
+func laborResetDistinctSQL() string {
+	return fmt.Sprintf(`SELECT DISTINCT ON (%[1]s)
+		%[1]s AS person_key,
+		id AS reset_id,
+		date AS reset_date,
+		COALESCE(entry_kind, 'payable') AS reset_kind,
+		(wage * hours)::float8 AS reset_amt
+	FROM labors
+	WHERE user_id = ?
+		AND %s
+	ORDER BY %[1]s, date DESC, id DESC`, laborPersonKeyExpr, laborResetKindSQL)
+}
+
+// laborNetCostSQL is labour credit minus lump-sum payments.
+func laborNetCostSQL() string {
+	return fmt.Sprintf(
+		`COALESCE(SUM(CASE WHEN %s THEN wage * hours ELSE 0 END),0)::float8 - COALESCE(SUM(CASE WHEN entry_kind = 'payment' THEN wage * hours ELSE 0 END),0)::float8`,
+		laborWorkKindSQL,
+	)
+}
+
+type laborAccountReset struct {
+	ID   uint      `gorm:"column:id"`
+	Date time.Time `gorm:"column:date"`
+	Kind string    `gorm:"column:entry_kind"`
+	Amt  float64   `gorm:"column:amt"`
+}
+
+func findLaborAccountReset(q *gorm.DB) (laborAccountReset, bool) {
+	var r laborAccountReset
+	err := q.Where(laborResetKindSQL).
+		Select(`id, date, COALESCE(entry_kind,'payable') as entry_kind, (wage * hours)::float8 as amt`).
+		Order("date DESC, id DESC").
+		Limit(1).
+		Scan(&r).Error
+	if err != nil || r.ID == 0 {
+		return r, false
+	}
+	return r, true
+}
+
+func laborSeedFromReset(kind string, amt float64) (payable, paid float64) {
+	if normalizeLaborEntryKind(kind) != "opening" {
+		return 0, 0
+	}
+	if amt >= 0 {
+		return amt, 0
+	}
+	return 0, -amt
+}
+
+func applyLaborAfterReset(q *gorm.DB, reset laborAccountReset) *gorm.DB {
+	loc := reset.Date.Location()
+	if loc == nil {
+		loc = time.Local
+	}
+	day := time.Date(reset.Date.Year(), reset.Date.Month(), reset.Date.Day(), 0, 0, 0, 0, loc)
+	next := day.AddDate(0, 0, 1)
+	return q.Where("date >= ? OR (date >= ? AND date < ? AND id > ?)", next, day, next, reset.ID)
+}
+
 // GetLaborPeoplePublic handles GET /api/labors/people
 // Distinct labourers with totals; optional q search on name/mobile.
 func GetLaborPeoplePublic(c *fiber.Ctx) error {
@@ -47,27 +124,34 @@ func GetLaborPeoplePublic(c *fiber.Ctx) error {
 		LastLocation string    `gorm:"column:last_location" json:"last_location"`
 	}
 
-	dbq := scopeByUserID(laborDB.Model(&models.Labor{}), uid).
+	pk := laborPersonKeyExprOn("labors")
+	afterReset := `(r.reset_id IS NULL OR labors.date::date > r.reset_date::date OR (labors.date::date = r.reset_date::date AND labors.id > r.reset_id))`
+	work := `COALESCE(labors.entry_kind,'payable') = 'payable'`
+	pay := `labors.entry_kind = 'payment'`
+	dbq := laborDB.Table("labors").
+		Where("labors.user_id = ?", uid).
+		Joins(fmt.Sprintf("LEFT JOIN (%s) r ON r.person_key = %s", laborResetDistinctSQL(), pk), uid).
 		Select(fmt.Sprintf(`
 			%s as person_key,
-			MAX(name) as name,
-			MAX(mobile) as mobile,
-			MAX(gender) as gender,
-			COUNT(*) as entry_count,
-			COALESCE(SUM(CASE WHEN COALESCE(entry_kind,'payable') <> 'tally' THEN wage * hours ELSE 0 END),0)::float8 as total_cost,
-			COALESCE(SUM(CASE WHEN COALESCE(entry_kind,'payable') <> 'tally' THEN hours ELSE 0 END),0)::float8 as total_hours,
-			COALESCE(SUM(CASE WHEN COALESCE(entry_kind,'payable') IN ('payable','opening') THEN wage * hours ELSE 0 END),0)::float8 as total_payable,
-			COALESCE(SUM(CASE WHEN entry_kind = 'payment' THEN wage * hours ELSE 0 END),0)::float8 as total_paid,
-			MAX(date) as last_date,
-			(ARRAY_AGG(category ORDER BY date DESC))[1] as last_category,
-			(ARRAY_AGG(location ORDER BY date DESC))[1] as last_location
-		`, laborPersonKeyExpr)).
-		Group(laborPersonKeyExpr)
+			MAX(labors.name) as name,
+			MAX(labors.mobile) as mobile,
+			MAX(labors.gender) as gender,
+			COUNT(*) FILTER (WHERE (%s) AND (%s)) as entry_count,
+			COALESCE(SUM(CASE WHEN (%s) AND (%s) THEN labors.hours ELSE 0 END),0)::float8 as total_hours,
+			COALESCE(SUM(CASE WHEN (%s) AND (%s) THEN labors.wage * labors.hours ELSE 0 END),0)::float8
+				+ COALESCE(MAX(CASE WHEN r.reset_kind = 'opening' AND r.reset_amt > 0 THEN r.reset_amt ELSE 0 END),0) as total_payable,
+			COALESCE(SUM(CASE WHEN (%s) AND (%s) THEN labors.wage * labors.hours ELSE 0 END),0)::float8
+				+ COALESCE(MAX(CASE WHEN r.reset_kind = 'opening' AND r.reset_amt < 0 THEN -r.reset_amt ELSE 0 END),0) as total_paid,
+			MAX(labors.date) as last_date,
+			(ARRAY_AGG(labors.category ORDER BY labors.date DESC))[1] as last_category,
+			(ARRAY_AGG(labors.location ORDER BY labors.date DESC))[1] as last_location
+		`, pk, work, afterReset, work, afterReset, work, afterReset, pay, afterReset)).
+		Group(pk)
 
 	if q != "" {
 		like := "%" + q + "%"
 		dbq = dbq.Having(
-			"MAX(name) ILIKE ? OR COALESCE(MAX(mobile),'') ILIKE ?",
+			"MAX(labors.name) ILIKE ? OR COALESCE(MAX(labors.mobile),'') ILIKE ?",
 			like, like,
 		)
 	}
@@ -79,16 +163,17 @@ func GetLaborPeoplePublic(c *fiber.Ctx) error {
 
 	out := make([]fiber.Map, 0, len(rows))
 	for _, r := range rows {
+		net := r.TotalPayable - r.TotalPaid
 		item := fiber.Map{
 			"person_key":    r.PersonKey,
 			"name":          r.Name,
 			"gender":        r.Gender,
 			"entry_count":   r.EntryCount,
-			"total_cost":    r.TotalCost,
+			"total_cost":    net,
 			"total_hours":   r.TotalHours,
 			"total_payable": r.TotalPayable,
 			"total_paid":    r.TotalPaid,
-			"balance":       r.TotalPayable - r.TotalPaid,
+			"balance":       net,
 			"last_date":     r.LastDate,
 			"last_category": r.LastCategory,
 			"last_location": r.LastLocation,
@@ -117,19 +202,27 @@ func GetLaborBalancePublic(c *fiber.Ctx) error {
 	base := scopeByUserID(laborDB.Model(&models.Labor{}), uid)
 	base = applyLaborPersonFilter(base, mobile, name)
 
+	sumsQ := base.Session(&gorm.Session{})
+	reset, hasReset := findLaborAccountReset(base.Session(&gorm.Session{}))
+	seedPayable, seedPaid := 0.0, 0.0
+	if hasReset {
+		seedPayable, seedPaid = laborSeedFromReset(reset.Kind, reset.Amt)
+		sumsQ = applyLaborAfterReset(sumsQ, reset)
+	}
+
 	type row struct {
 		Payable float64 `gorm:"column:payable"`
 		Paid    float64 `gorm:"column:paid"`
 	}
 	var r row
-	if err := base.Select(`
-		COALESCE(SUM(CASE WHEN COALESCE(entry_kind,'payable') IN ('payable','opening') THEN wage * hours ELSE 0 END),0)::float8 as payable,
+	if err := sumsQ.Select(fmt.Sprintf(`
+		COALESCE(SUM(CASE WHEN %s THEN wage * hours ELSE 0 END),0)::float8 as payable,
 		COALESCE(SUM(CASE WHEN entry_kind = 'payment' THEN wage * hours ELSE 0 END),0)::float8 as paid
-	`).Scan(&r).Error; err != nil {
+	`, laborWorkKindSQL)).Scan(&r).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	balance := r.Payable - r.Paid
+	balance := (seedPayable + r.Payable) - (seedPaid + r.Paid)
 	payableShown := balance
 	if payableShown < 0 {
 		payableShown = 0
@@ -140,7 +233,7 @@ func GetLaborBalancePublic(c *fiber.Ctx) error {
 	}
 	return c.JSON(fiber.Map{
 		"payable":    payableShown,
-		"paid":       r.Paid,
+		"paid":       seedPaid + r.Paid,
 		"balance":    balance,
 		"receivable": receivable,
 	})
@@ -269,14 +362,14 @@ func laborAggSummary(q *gorm.DB) (laborSumAgg, error) {
 		TotalPaid    float64 `gorm:"column:total_paid"`
 	}
 	var r row
-	err := q.Select(`
-		COALESCE(SUM(CASE WHEN COALESCE(entry_kind,'payable') <> 'tally' THEN wage * hours ELSE 0 END),0)::float8 as total_cost,
-		COALESCE(SUM(CASE WHEN COALESCE(entry_kind,'payable') <> 'tally' THEN hours ELSE 0 END),0)::float8 as total_hours,
-		COUNT(*) as entry_count,
-		COALESCE(AVG(CASE WHEN COALESCE(entry_kind,'payable') IN ('payable','opening') THEN wage END),0)::float8 as avg_rate,
-		COALESCE(SUM(CASE WHEN COALESCE(entry_kind,'payable') IN ('payable','opening') THEN wage * hours ELSE 0 END),0)::float8 as total_payable,
+	err := q.Select(fmt.Sprintf(`
+		%s as total_cost,
+		COALESCE(SUM(CASE WHEN %s THEN hours ELSE 0 END),0)::float8 as total_hours,
+		COUNT(*) FILTER (WHERE %s) as entry_count,
+		COALESCE(AVG(CASE WHEN %s THEN wage END),0)::float8 as avg_rate,
+		COALESCE(SUM(CASE WHEN %s THEN wage * hours ELSE 0 END),0)::float8 as total_payable,
 		COALESCE(SUM(CASE WHEN entry_kind = 'payment' THEN wage * hours ELSE 0 END),0)::float8 as total_paid
-	`).Scan(&r).Error
+	`, laborNetCostSQL(), laborWorkKindSQL, laborWorkKindSQL, laborWorkKindSQL, laborWorkKindSQL)).Scan(&r).Error
 	return laborSumAgg{
 		TotalCost:    r.TotalCost,
 		TotalHours:   r.TotalHours,
@@ -306,13 +399,13 @@ func laborMonthlySchedule(q *gorm.DB, from, to time.Time) ([]laborPeriodRow, err
 		Count      int64   `gorm:"column:count"`
 	}
 	var rows []row
-	err := q.Select(`
+	err := q.Select(fmt.Sprintf(`
 		EXTRACT(YEAR FROM date)::int as y,
 		EXTRACT(MONTH FROM date)::int as m,
-		COALESCE(SUM(CASE WHEN COALESCE(entry_kind,'payable') <> 'tally' THEN wage * hours ELSE 0 END),0)::float8 as total_cost,
-		COALESCE(SUM(CASE WHEN COALESCE(entry_kind,'payable') <> 'tally' THEN hours ELSE 0 END),0)::float8 as total_hours,
-		COUNT(*) FILTER (WHERE COALESCE(entry_kind,'payable') <> 'tally') as count
-	`).
+		%s as total_cost,
+		COALESCE(SUM(CASE WHEN %s THEN hours ELSE 0 END),0)::float8 as total_hours,
+		COUNT(*) FILTER (WHERE %s) as count
+	`, laborNetCostSQL(), laborWorkKindSQL, laborWorkKindSQL)).
 		Where("date >= ? AND date <= ?", from, to).
 		Group("y, m").
 		Order("y ASC, m ASC").
@@ -361,12 +454,12 @@ func laborWeeklySchedule(q *gorm.DB, monthStart, monthEnd time.Time) ([]laborWee
 		Count      int64   `gorm:"column:count"`
 	}
 	var rows []row
-	err := q.Select(`
+	err := q.Select(fmt.Sprintf(`
 		((EXTRACT(DAY FROM date)::int - 1) / 7) + 1 as week_num,
-		COALESCE(SUM(wage * hours),0)::float8 as total_cost,
-		COALESCE(SUM(hours),0)::float8 as total_hours,
-		COUNT(*) as count
-	`).
+		%s as total_cost,
+		COALESCE(SUM(CASE WHEN %s THEN hours ELSE 0 END),0)::float8 as total_hours,
+		COUNT(*) FILTER (WHERE %s) as count
+	`, laborNetCostSQL(), laborWorkKindSQL, laborWorkKindSQL)).
 		Where("date >= ? AND date < ?", monthStart, monthEnd).
 		Group("week_num").
 		Order("week_num ASC").
@@ -419,7 +512,7 @@ func laborCategoryBreakdown(q *gorm.DB) ([]laborCatRow, error) {
 		Count      int64   `gorm:"column:count"`
 	}
 	var rows []row
-	err := q.Select(`
+	err := q.Where(laborWorkKindSQL).Select(`
 		category,
 		COALESCE(SUM(wage * hours),0)::float8 as total_cost,
 		COALESCE(SUM(hours),0)::float8 as total_hours,
@@ -467,7 +560,7 @@ func laborShiftBreakdown(q *gorm.DB) ([]laborShiftRow, error) {
 		Count      int64   `gorm:"column:count"`
 	}
 	var rows []row
-	err := q.Select(`
+	err := q.Where(laborWorkKindSQL).Select(`
 		shift,
 		COALESCE(SUM(wage * hours),0)::float8 as total_cost,
 		COALESCE(SUM(hours),0)::float8 as total_hours,

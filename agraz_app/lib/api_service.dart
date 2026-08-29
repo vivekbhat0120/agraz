@@ -668,7 +668,7 @@ class ApiService {
     }
   }
 
-  /// PUT /api/labors/bulk-rate â€” update wage on payable/opening rows in a date range.
+  /// PUT /api/labors/bulk-rate — update wage on payable rows in a date range.
   Future<Map<String, dynamic>> bulkUpdateLaborRate({
     required String name,
     String? mobile,
@@ -1809,6 +1809,37 @@ class ApiService {
     final response = await offline.get(uri, headers: headers);
     if (response.statusCode != 200) {
       throw Exception('Failed to load reports (${response.statusCode})');
+    }
+    final decoded = jsonDecode(response.body);
+    return decoded is Map ? Map<String, dynamic>.from(decoded) : {};
+  }
+
+  Future<Map<String, dynamic>> fetchDailySummary({
+    required String from,
+    required String to,
+  }) async {
+    final headers = await authGetHeaders();
+    final uri = Uri.parse('$BASE_URL/api/daily_summary').replace(
+      queryParameters: {
+        'from': from,
+        'to': to,
+      },
+    );
+    final response = await offline.get(uri, headers: headers);
+    if (response.statusCode != 200) {
+      dynamic decoded = {};
+      try {
+        if (response.body.isNotEmpty) {
+          decoded = jsonDecode(response.body);
+        }
+      } catch (_) {}
+      throw Exception(
+        _apiErrorMessage(
+          decoded,
+          response.statusCode,
+          fallback: 'Failed to load daily summary',
+        ),
+      );
     }
     final decoded = jsonDecode(response.body);
     return decoded is Map ? Map<String, dynamic>.from(decoded) : {};

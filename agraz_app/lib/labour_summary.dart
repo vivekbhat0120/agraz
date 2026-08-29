@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import 'api_service.dart';
@@ -9,6 +10,168 @@ import 'feedback_fab.dart';
 import 'labor_categories.dart';
 import 'labour_export.dart';
 import 'l10n/app_l10n.dart';
+
+String laborNumberOfLabourText(dynamic n) =>
+    '${n ?? 0} ${tr('number of labour')}';
+
+String formatLaborHours(double n) => n == n.roundToDouble()
+    ? n.toStringAsFixed(0)
+    : n.toStringAsFixed(1);
+
+class LaborTotals {
+  final double work;
+  final double paid;
+  final double hours;
+  const LaborTotals({this.work = 0, this.paid = 0, this.hours = 0});
+  double get net => work - paid;
+}
+
+double _asLaborNum(dynamic v) {
+  if (v == null) return 0;
+  if (v is num) return v.toDouble();
+  return double.tryParse(v.toString()) ?? 0;
+}
+
+DateTime? _laborDay(dynamic v) {
+  try {
+    final d = DateTime.parse(v.toString());
+    return DateTime(d.year, d.month, d.day);
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Work credit minus lump-sum payments. Hours count labour only, not payments.
+/// When [applyAccountReset] is true, the latest tally/opening row becomes the
+/// new starting balance and earlier rows are ignored.
+LaborTotals summarizeLaborEntries(
+  Iterable<Map<String, dynamic>> entries, {
+  DateTime? from,
+  DateTime? to,
+  bool applyAccountReset = false,
+}) {
+  final list = entries.toList();
+  final fromD =
+      from == null ? null : DateTime(from.year, from.month, from.day);
+  final toD = to == null ? null : DateTime(to.year, to.month, to.day);
+
+  DateTime? resetDay;
+  var resetId = 0;
+  var seedWork = 0.0, seedPaid = 0.0;
+  if (applyAccountReset) {
+    for (final e in list) {
+      if (!laborIsResetKind(e['entry_kind']?.toString())) continue;
+      final d = _laborDay(e['date']);
+      if (d == null) continue;
+      final id = _laborId(e);
+      if (resetDay == null ||
+          d.isAfter(resetDay) ||
+          (d == resetDay && id >= resetId)) {
+        resetDay = d;
+        resetId = id;
+        final amt = _asLaborNum(e['wage']) * _asLaborNum(e['hours']);
+        if ((e['entry_kind']?.toString() ?? '').toLowerCase() == 'opening') {
+          if (amt >= 0) {
+            seedWork = amt;
+            seedPaid = 0;
+          } else {
+            seedWork = 0;
+            seedPaid = -amt;
+          }
+        } else {
+          seedWork = 0;
+          seedPaid = 0;
+        }
+      }
+    }
+  }
+
+  var work = applyAccountReset ? seedWork : 0.0;
+  var paid = applyAccountReset ? seedPaid : 0.0;
+  var hours = 0.0;
+  for (final e in list) {
+    final d = _laborDay(e['date']);
+    if (fromD != null && (d == null || d.isBefore(fromD))) continue;
+    if (toD != null && (d == null || d.isAfter(toD))) continue;
+    if (applyAccountReset && resetDay != null) {
+      final id = _laborId(e);
+      if (d == null ||
+          d.isBefore(resetDay) ||
+          (d == resetDay && id <= resetId)) {
+        continue;
+      }
+    }
+    final amt = _asLaborNum(e['wage']) * _asLaborNum(e['hours']);
+    final kind = e['entry_kind']?.toString();
+    if (laborIsWorkKind(kind)) {
+      work += amt;
+      hours += _asLaborNum(e['hours']);
+    } else if (laborIsPaymentKind(kind)) {
+      paid += amt;
+    } else if (!applyAccountReset && laborIsOpeningKind(kind)) {
+      if (amt >= 0) {
+        work += amt;
+      } else {
+        paid += -amt;
+      }
+    }
+  }
+  return LaborTotals(work: work, paid: paid, hours: hours);
+}
+
+int _laborId(Map<String, dynamic> e) {
+  final v = e['id'];
+  if (v is int) return v;
+  return int.tryParse(v?.toString() ?? '') ?? 0;
+}
+
+/// Prefer payable − paid so old APIs that stuffed payments into total_cost still net correctly.
+double laborNetFromSummary(Map<String, dynamic> sum) {
+  if (sum.containsKey('total_payable') || sum.containsKey('total_paid')) {
+    return _asLaborNum(sum['total_payable']) - _asLaborNum(sum['total_paid']);
+  }
+  if (sum['balance'] != null) return _asLaborNum(sum['balance']);
+  return _asLaborNum(sum['total_cost']);
+}
+
+bool laborIsPaymentKind(String? kind) =>
+    (kind ?? '').toLowerCase() == 'payment';
+
+bool laborIsOpeningKind(String? kind) =>
+    (kind ?? '').toLowerCase() == 'opening';
+
+bool laborIsResetKind(String? kind) {
+  switch ((kind ?? '').toLowerCase()) {
+    case 'tally':
+    case 'opening':
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool laborIsWorkKind(String? kind) {
+  switch ((kind ?? 'payable').toLowerCase()) {
+    case '':
+    case 'payable':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/// Work rows show rate × days/hrs. Payments are a lump sum, not labour units.
+String laborRateHoursCaption(String? kind, double wage, double hours) {
+  String money(double v) =>
+      v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+  if (laborIsPaymentKind(kind) || laborIsOpeningKind(kind)) {
+    return '₹${money(wage * hours)}';
+  }
+  final h = hours == hours.roundToDouble()
+      ? hours.toStringAsFixed(0)
+      : hours.toStringAsFixed(1);
+  return '₹${money(wage)} × $h';
+}
 
 (double payable, double receivable) _outstandingFromTotals(
   dynamic totalPayable,
@@ -309,7 +472,8 @@ class _LabourSummaryPageState extends State<LabourSummaryPage> {
                                                       mobile.isNotEmpty)
                                                     mobile,
                                                   if (gender.isNotEmpty) gender,
-                                                  '${p['entry_count'] ?? 0} entries',
+                                                  laborNumberOfLabourText(
+                                                      p['entry_count']),
                                                 ].join(' · '),
                                                 style: AppText.caption,
                                               ),
@@ -467,7 +631,9 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
                     decoration: InputDecoration(
                       labelText: tr('Opening amount'),
                       prefixIcon: const Icon(Icons.currency_rupee_rounded),
-                      helperText: tr('Positive = payable opening'),
+                      helperText: tr(
+                        'Resets the account from this date. Positive = payable.',
+                      ),
                     ),
                   ),
                   ListTile(
@@ -579,6 +745,50 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
     return {};
   }
 
+  DateTime get _monthStart =>
+      DateTime(_selectedMonth.year, _selectedMonth.month, 1);
+  DateTime get _monthEnd =>
+      DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0);
+
+  LaborTotals get _monthTotals {
+    final fromEntries =
+        summarizeLaborEntries(_entries, from: _monthStart, to: _monthEnd);
+    if (_entries.isNotEmpty) return fromEntries;
+    final sum = _map('month_summary');
+    return LaborTotals(
+      work: laborNetFromSummary(sum),
+      hours: _num(sum['total_hours']),
+    );
+  }
+
+  LaborTotals get _allTotals {
+    if (_entries.isNotEmpty) {
+      return summarizeLaborEntries(_entries, applyAccountReset: true);
+    }
+    final sum = _map('summary');
+    return LaborTotals(
+      work: laborNetFromSummary(sum),
+      hours: _num(sum['total_hours']),
+    );
+  }
+
+  bool _entryInPeriod(Map<String, dynamic> e) {
+    final d = _laborDay(e['date']);
+    if (d == null) return true;
+    if (_fromDate != null) {
+      final f = DateTime(_fromDate!.year, _fromDate!.month, _fromDate!.day);
+      if (d.isBefore(f)) return false;
+    }
+    if (_toDate != null) {
+      final t = DateTime(_toDate!.year, _toDate!.month, _toDate!.day);
+      if (d.isAfter(t)) return false;
+    }
+    return true;
+  }
+
+  List<Map<String, dynamic>> get _periodEntries =>
+      _entries.where(_entryInPeriod).toList();
+
   void _applyPeriod(String period) {
     final now = DateTime.now();
     _period = period;
@@ -617,10 +827,8 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
         _api.fetchLabors(
           mobile: _mobile,
           name: _mobile == null ? widget.name : null,
-          from: _fromStr,
-          to: _toStr,
           category: _filterCategory,
-          limit: 200,
+          limit: 500,
         ),
         _api.fetchLaborBalance(
           mobile: _mobile,
@@ -692,7 +900,7 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
 
   Future<void> _exportExcel() async {
     await shareLabourExcel(
-      _entries,
+      _periodEntries,
       fileName: 'labour_${widget.name.replaceAll(' ', '_')}.xlsx',
     );
   }
@@ -703,7 +911,7 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
       subtitle: _mobile,
       totalPayable: _totalPayable,
       totalReceivable: _totalReceivable,
-      entries: _entries,
+      entries: _periodEntries,
       fileName: 'labour_${widget.name.replaceAll(' ', '_')}.pdf',
     );
   }
@@ -796,13 +1004,13 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
                     ),
                     IconButton(
                       tooltip: tr('Export Excel'),
-                      onPressed: _entries.isEmpty ? null : _exportExcel,
+                      onPressed: _periodEntries.isEmpty ? null : _exportExcel,
                       icon: const Icon(Icons.table_chart_rounded,
                           color: Colors.white),
                     ),
                     IconButton(
                       tooltip: tr('Statement PDF'),
-                      onPressed: _entries.isEmpty ? null : _exportPdf,
+                      onPressed: _periodEntries.isEmpty ? null : _exportPdf,
                       icon: const Icon(Icons.picture_as_pdf_rounded,
                           color: Colors.white),
                     ),
@@ -994,7 +1202,6 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
   }
 
   Widget _buildOverview(Map<String, dynamic> profile) {
-    final monthSum = _map('month_summary');
     final allSum = _map('summary');
     final byCat = _list('by_category');
     final byShift = _list('by_shift');
@@ -1038,24 +1245,16 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
               Expanded(
                 child: _stat(
                   'Cost',
-                  _money(monthSum['total_cost']),
+                  _money(_monthTotals.net),
                   AppColors.primary,
                 ),
               ),
               SizedBox(width: 8),
               Expanded(
                 child: _stat(
-                  'Days/Hrs',
-                  _hours(monthSum['total_hours']),
+                  tr('Number of labour'),
+                  _hours(_monthTotals.hours),
                   AppColors.info,
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: _stat(
-                  'Entries',
-                  '${monthSum['entry_count'] ?? 0}',
-                  AppColors.accent,
                 ),
               ),
             ],
@@ -1067,9 +1266,8 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
               children: [
                 Text(tr('All-time'), style: TextStyle(fontWeight: FontWeight.w700)),
                 SizedBox(height: 8),
-                _kv('Total cost', _money(allSum['total_cost'])),
-                _kv('Total days/hrs', _hours(allSum['total_hours'])),
-                _kv('Entries', '${allSum['entry_count'] ?? 0}'),
+                _kv('Total cost', _money(_allTotals.net)),
+                _kv(tr('Number of labour'), _hours(_allTotals.hours)),
                 _kv('Avg rate', _money(allSum['avg_rate'])),
               ],
             ),
@@ -1116,7 +1314,7 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
                       ),
                       SizedBox(height: 4),
                       Text(
-                        '${_hours(c['total_hours'])} days/hrs · ${c['count'] ?? 0} entries · ${pct.toStringAsFixed(0)}%',
+                        '${_hours(c['total_hours'])} ${tr('number of labour')} · ${pct.toStringAsFixed(0)}%',
                         style: AppText.caption,
                       ),
                     ],
@@ -1194,6 +1392,18 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
             AppCard(child: Text(tr('No monthly data')))
           else
             ...monthly.reversed.map((m) {
+              final year = _num(m['year']).toInt();
+              final month = _num(m['month']).toInt();
+              final t = (year > 0 && month > 0)
+                  ? summarizeLaborEntries(
+                      _entries,
+                      from: DateTime(year, month, 1),
+                      to: DateTime(year, month + 1, 0),
+                    )
+                  : LaborTotals(
+                      work: _num(m['total_cost']),
+                      hours: _num(m['total_hours']),
+                    );
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: AppCard(
@@ -1212,7 +1422,7 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
                           ),
                           const Spacer(),
                           Text(
-                            _money(m['total_cost']),
+                            _money(t.net),
                             style: const TextStyle(
                               fontWeight: FontWeight.w800,
                               color: AppColors.primary,
@@ -1222,7 +1432,7 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
                       ),
                       SizedBox(height: 6),
                       Text(
-                        '${_hours(m['total_hours'])} days/hrs · ${m['count'] ?? 0} entries',
+                        laborNumberOfLabourText(_hours(t.hours)),
                         style: AppText.caption,
                       ),
                     ],
@@ -1253,6 +1463,18 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
             AppCard(child: Text(tr('No weekly data')))
           else
             ...weekly.map((w) {
+              DateTime? ws;
+              DateTime? we;
+              try {
+                ws = DateTime.parse(w['week_start'].toString());
+                we = DateTime.parse(w['week_end'].toString());
+              } catch (_) {}
+              final t = (ws != null && we != null)
+                  ? summarizeLaborEntries(_entries, from: ws, to: we)
+                  : LaborTotals(
+                      work: _num(w['total_cost']),
+                      hours: _num(w['total_hours']),
+                    );
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: AppCard(
@@ -1268,7 +1490,7 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
                       Row(
                         children: [
                           Text(
-                            _money(w['total_cost']),
+                            _money(t.net),
                             style: const TextStyle(
                               fontWeight: FontWeight.w800,
                               color: AppColors.primary,
@@ -1276,7 +1498,7 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
                           ),
                           const Spacer(),
                           Text(
-                            '${_hours(w['total_hours'])} days/hrs · ${w['count'] ?? 0} entries',
+                            laborNumberOfLabourText(_hours(t.hours)),
                             style: AppText.caption,
                           ),
                         ],
@@ -1294,7 +1516,7 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
   Widget _buildEntries() {
     return RefreshIndicator(
       onRefresh: _load,
-      child: _entries.isEmpty
+      child: _periodEntries.isEmpty
           ? ListView(
               children: [
                 SizedBox(height: 40),
@@ -1303,10 +1525,10 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
             )
           : ListView.separated(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-              itemCount: _entries.length,
+              itemCount: _periodEntries.length,
               separatorBuilder: (_, _) => SizedBox(height: 8),
               itemBuilder: (context, i) {
-                final e = _entries[i];
+                final e = _periodEntries[i];
                 final wage = _num(e['wage']);
                 final hours = _num(e['hours']);
                 DateTime? date;
@@ -1355,7 +1577,10 @@ class _LabourerDetailPageState extends State<LabourerDetailPage>
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'Rate ${_money(wage)} × ${_hours(hours)} · ${e['work_type'] ?? ''}',
+                        laborIsPaymentKind(e['entry_kind']?.toString())
+                            ? laborRateHoursCaption(
+                                e['entry_kind']?.toString(), wage, hours)
+                            : '${tr('Rate')} ${laborRateHoursCaption(e['entry_kind']?.toString(), wage, hours)} · ${e['work_type'] ?? ''}',
                         style: AppText.caption,
                       ),
                       if ((e['narration']?.toString() ?? '').isNotEmpty) ...[
@@ -1566,8 +1791,10 @@ class _LaborHistoryPageState extends State<LaborHistoryPage> {
     var sum = 0.0;
     for (final e in _entries) {
       final kind = (e['entry_kind']?.toString() ?? 'payable').toLowerCase();
+      final amt = _num(e['wage']) * _num(e['hours']);
       if (kind == 'payment' || kind == 'tally') continue;
-      sum += _num(e['wage']) * _num(e['hours']);
+      if (kind == 'opening' && amt < 0) continue;
+      sum += amt;
     }
     return sum;
   }
@@ -1576,25 +1803,28 @@ class _LaborHistoryPageState extends State<LaborHistoryPage> {
     var sum = 0.0;
     for (final e in _entries) {
       final kind = (e['entry_kind']?.toString() ?? 'payable').toLowerCase();
-      if (kind != 'payment') continue;
-      sum += _num(e['wage']) * _num(e['hours']);
+      final amt = _num(e['wage']) * _num(e['hours']);
+      if (kind == 'payment' || (kind == 'opening' && amt < 0)) {
+        sum += amt.abs();
+      }
     }
     return sum;
   }
 
   String _money(double v) => '₹${v.toStringAsFixed(v == v.roundToDouble() ? 0 : 2)}';
 
-  String _entryKindLabel(String? kind) {
+  String _entryKindLabel(String? kind, [double amount = 0]) {
     final k = (kind ?? 'payable').toLowerCase();
-    if (k == 'payment') return tr('Debit');
+    if (k == 'payment' || (k == 'opening' && amount < 0)) return tr('Payment');
     if (k == 'tally') return tr('Tally');
-    return tr('Credit'); // payable + opening
+    if (k == 'opening') return tr('Payable');
+    return tr('Payable');
   }
 
-  Color _entryKindColor(String? kind) {
+  Color _entryKindColor(String? kind, [double amount = 0]) {
     final k = (kind ?? 'payable').toLowerCase();
-    if (k == 'payment') return AppColors.expense;
-    if (k == 'tally') return AppColors.info;
+    if (k == 'payment' || (k == 'opening' && amount < 0)) return AppColors.expense;
+    if (k == 'tally' || k == 'opening') return AppColors.info;
     return AppColors.income;
   }
 
@@ -1853,7 +2083,7 @@ class _LaborHistoryPageState extends State<LaborHistoryPage> {
                 children: [
                   Expanded(
                     child: _summaryBox(
-                      tr('Credit'),
+                      tr('Payable'),
                       _loading ? '…' : _money(_totalCredit),
                       AppColors.income,
                       Icons.trending_up_rounded,
@@ -1862,7 +2092,7 @@ class _LaborHistoryPageState extends State<LaborHistoryPage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: _summaryBox(
-                      tr('Debit'),
+                      tr('Payment'),
                       _loading ? '…' : _money(_totalDebit),
                       AppColors.expense,
                       Icons.trending_down_rounded,
@@ -1887,7 +2117,9 @@ class _LaborHistoryPageState extends State<LaborHistoryPage> {
                 child: Text(
                   _loading
                       ? tr('Loading…')
-                      : '${_entries.length} ${_entries.length == 1 ? tr('entry') : tr('entries')}',
+                      : laborNumberOfLabourText(
+                          formatLaborHours(
+                              summarizeLaborEntries(_entries).hours)),
                   style: AppText.caption,
                 ),
               ),
@@ -1916,8 +2148,12 @@ class _LaborHistoryPageState extends State<LaborHistoryPage> {
                               final hours = _num(e['hours']);
                               final kind = e['entry_kind']?.toString();
                               final isTally = (kind ?? '').toLowerCase() == 'tally';
-                              final amount = isTally ? 0.0 : wage * hours;
-                              final kindColor = _entryKindColor(kind);
+                              final isOpening =
+                                  (kind ?? '').toLowerCase() == 'opening';
+                              final isReset = isTally || isOpening;
+                              final signed = wage * hours;
+                              final amount = isTally ? 0.0 : signed.abs();
+                              final kindColor = _entryKindColor(kind, signed);
                               final extras = _extrasFrom(e);
                               final others =
                                   extras['rent']! + extras['food']! + extras['bonus']!;
@@ -1928,8 +2164,8 @@ class _LaborHistoryPageState extends State<LaborHistoryPage> {
                               return AppCard(
                                 onTap: () => _editEntry(e),
                                 padding: const EdgeInsets.all(14),
-                                color: isTally
-                                    ? AppColors.info.withValues(alpha: 0.08)
+                                color: isReset
+                                    ? kindColor.withValues(alpha: 0.08)
                                     : AppColors.surface,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1940,7 +2176,7 @@ class _LaborHistoryPageState extends State<LaborHistoryPage> {
                                           child: Text(
                                             e['name']?.toString() ?? '',
                                             style: AppText.bodyStrong.copyWith(
-                                              color: isTally ? AppColors.info : null,
+                                              color: isReset ? kindColor : null,
                                             ),
                                           ),
                                         ),
@@ -1962,15 +2198,15 @@ class _LaborHistoryPageState extends State<LaborHistoryPage> {
                                             .isNotEmpty)
                                           InfoChip(
                                             label: e['category'].toString(),
-                                            color: isTally
-                                                ? AppColors.info
+                                            color: isReset
+                                                ? kindColor
                                                 : AppColors.expense,
                                           ),
                                         InfoChip(
-                                          label: _entryKindLabel(kind),
+                                          label: _entryKindLabel(kind, signed),
                                           color: kindColor,
                                         ),
-                                        if (!isTally &&
+                                        if (!isReset &&
                                             (e['shift']?.toString() ?? '')
                                                 .isNotEmpty)
                                           InfoChip(
@@ -1999,15 +2235,15 @@ class _LaborHistoryPageState extends State<LaborHistoryPage> {
                                       [
                                         if (date != null)
                                           DateFormat('dd/MM/yyyy').format(date),
-                                        if (!isTally)
-                                          '₹${wage.toStringAsFixed(0)} × ${hours.toStringAsFixed(hours == hours.roundToDouble() ? 0 : 1)}',
-                                        if (isTally &&
+                                        if (!isReset)
+                                          laborRateHoursCaption(kind, wage, hours),
+                                        if (isReset &&
                                             (e['narration']?.toString() ?? '')
                                                 .isNotEmpty)
                                           e['narration'].toString(),
                                       ].join('  ·  '),
                                       style: AppText.caption.copyWith(
-                                        color: isTally ? AppColors.info : null,
+                                        color: isReset ? kindColor : null,
                                       ),
                                     ),
                                     if ((e['narration']?.toString() ?? '')
@@ -2032,6 +2268,57 @@ class _LaborHistoryPageState extends State<LaborHistoryPage> {
   }
 }
 
+double _laborNum(dynamic v) {
+  if (v == null) return 0;
+  if (v is num) return v.toDouble();
+  return double.tryParse(v.toString()) ?? 0;
+}
+
+String _laborNumText(dynamic v, {String empty = ''}) {
+  if (v == null) return empty;
+  if (v is String && v.trim().isEmpty) return empty;
+  final n = _laborNum(v);
+  return n == n.roundToDouble() ? n.toStringAsFixed(0) : n.toString();
+}
+
+String _laborEditKindLabel(String? kind) {
+  switch ((kind ?? 'payable').toLowerCase()) {
+    case 'payment':
+      return 'Payment';
+    case 'tally':
+      return 'Tally';
+    case 'opening':
+      return 'Opening Balance';
+    default:
+      return 'Payable';
+  }
+}
+
+String _laborEditKindValue(String label) {
+  switch (label) {
+    case 'Payment':
+      return 'payment';
+    case 'Tally':
+      return 'tally';
+    case 'Opening Balance':
+      return 'opening';
+    default:
+      return 'payable';
+  }
+}
+
+Map<String, double> _laborExtrasMap(Map e) {
+  final extra = e['extra'];
+  if (extra is Map) {
+    return {
+      'rent': _laborNum(extra['rent']),
+      'food': _laborNum(extra['food']),
+      'bonus': _laborNum(extra['bonus']),
+    };
+  }
+  return {'rent': 0, 'food': 0, 'bonus': 0};
+}
+
 /// Shared edit dialog for a labour entry map (history / detail).
 Future<bool?> showLaborEntryEditDialog(
   BuildContext context,
@@ -2042,159 +2329,451 @@ Future<bool?> showLaborEntryEditDialog(
   final id = idRaw is int ? idRaw : int.tryParse('$idRaw');
   if (id == null) return false;
 
-  final nameCtrl = TextEditingController(text: entry['name']?.toString() ?? '');
-  final wageCtrl = TextEditingController(
-    text: (entry['wage'] is num
-            ? (entry['wage'] as num).toStringAsFixed(0)
-            : entry['wage']?.toString()) ??
-        '',
-  );
-  final hoursCtrl = TextEditingController(
-    text: entry['hours']?.toString() ?? '1',
-  );
-  final narrationCtrl =
-      TextEditingController(text: entry['narration']?.toString() ?? '');
-  final categoryCtrl =
-      TextEditingController(text: entry['category']?.toString() ?? '');
-  DateTime date =
-      DateTime.tryParse(entry['date']?.toString() ?? '') ?? DateTime.now();
+  var categories = List<String>.from(kLaborWorkCategories);
+  try {
+    categories = [...await loadLaborCategories()];
+  } catch (_) {}
+  if (!context.mounted) return false;
 
-  final saved = await showDialog<bool>(
+  final payload = await showDialog<Map<String, dynamic>>(
     context: context,
-    builder: (ctx) {
-      return StatefulBuilder(
-        builder: (ctx, setLocal) {
-          return Dialog(
-            insetPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(tr('Edit labour entry'), style: AppText.h3),
-                  SizedBox(height: 12),
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: InputDecoration(labelText: tr('Name')),
-                  ),
-                  SizedBox(height: 8),
-                  TextField(
-                    controller: categoryCtrl,
-                    decoration: InputDecoration(labelText: tr('Category')),
-                  ),
-                  SizedBox(height: 8),
-                  Row(
+    builder: (ctx) => _LaborEntryEditDialog(
+      entry: entry,
+      categories: categories,
+    ),
+  );
+  if (payload == null) return false;
+
+  final result = await api.updateLabor(id, payload);
+  if (result['success'] == true) return true;
+  if (context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result['message']?.toString() ?? tr('Update failed')),
+        backgroundColor: AppColors.expense,
+      ),
+    );
+  }
+  return false;
+}
+
+class _LaborEntryEditDialog extends StatefulWidget {
+  final Map<String, dynamic> entry;
+  final List<String> categories;
+
+  const _LaborEntryEditDialog({
+    required this.entry,
+    required this.categories,
+  });
+
+  @override
+  State<_LaborEntryEditDialog> createState() => _LaborEntryEditDialogState();
+}
+
+class _LaborEntryEditDialogState extends State<_LaborEntryEditDialog> {
+  static const _shifts = ['fullday', 'morning', 'evening', 'night'];
+  static const _genders = ['Male', 'Female'];
+  static const _workTypes = ['Daily Wages', 'Contract'];
+  static const _kindLabels = ['Payable', 'Payment', 'Tally', 'Opening Balance'];
+  static const _defaultLocations = [
+    'Farm',
+    'Warehouse',
+    'Processing Unit',
+    'Field',
+  ];
+
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _mobileCtrl;
+  late final TextEditingController _wageCtrl;
+  late final TextEditingController _hoursCtrl;
+  late final TextEditingController _labourHeadCtrl;
+  late final TextEditingController _narrationCtrl;
+  late final TextEditingController _rentCtrl;
+  late final TextEditingController _foodCtrl;
+  late final TextEditingController _bonusCtrl;
+  late DateTime _date;
+  late String _shift;
+  late String _gender;
+  late String _category;
+  late String _location;
+  late String _workType;
+  late String _kindLabel;
+  late List<String> _categories;
+  late List<String> _locations;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.entry;
+    final extras = _laborExtrasMap(e);
+    _nameCtrl = TextEditingController(text: e['name']?.toString() ?? '');
+    _mobileCtrl = TextEditingController(text: e['mobile']?.toString() ?? '');
+    _wageCtrl = TextEditingController(text: _laborNumText(e['wage']));
+    _hoursCtrl = TextEditingController(
+      text: _laborNumText(e['hours'], empty: '1'),
+    );
+    _labourHeadCtrl =
+        TextEditingController(text: e['labour_head']?.toString() ?? '');
+    _narrationCtrl =
+        TextEditingController(text: e['narration']?.toString() ?? '');
+    _rentCtrl = TextEditingController(text: _laborNumText(extras['rent']));
+    _foodCtrl = TextEditingController(text: _laborNumText(extras['food']));
+    _bonusCtrl = TextEditingController(text: _laborNumText(extras['bonus']));
+    _date = DateTime.tryParse(e['date']?.toString() ?? '') ?? DateTime.now();
+
+    final shift = (e['shift']?.toString() ?? 'fullday').trim();
+    _shift = shift.isEmpty ? 'fullday' : shift;
+    final gender = (e['gender']?.toString() ?? 'Male').trim();
+    _gender = _genders.contains(gender) ? gender : 'Male';
+    _category = (e['category']?.toString() ?? '').trim();
+    final location = (e['location']?.toString() ?? 'Farm').trim();
+    _location = location.isEmpty ? 'Farm' : location;
+    final workType = (e['work_type']?.toString() ?? 'Daily Wages').trim();
+    _workType = _workTypes.contains(workType) ? workType : 'Daily Wages';
+    _kindLabel = _laborEditKindLabel(e['entry_kind']?.toString());
+
+    _categories = [...widget.categories];
+    if (_category.isNotEmpty && !_categories.contains(_category)) {
+      _categories = [..._categories, _category];
+    }
+    _locations = [..._defaultLocations];
+    if (!_locations.contains(_location)) {
+      _locations = [..._locations, _location];
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _mobileCtrl.dispose();
+    _wageCtrl.dispose();
+    _hoursCtrl.dispose();
+    _labourHeadCtrl.dispose();
+    _narrationCtrl.dispose();
+    _rentCtrl.dispose();
+    _foodCtrl.dispose();
+    _bonusCtrl.dispose();
+    super.dispose();
+  }
+
+  bool get _isContract => _workType == 'Contract';
+  bool get _isTally => _kindLabel == 'Tally';
+  bool get _isOpening => _kindLabel == 'Opening Balance';
+
+  void _save() {
+    final name = _nameCtrl.text.trim();
+    final wage = double.tryParse(_wageCtrl.text.trim()) ?? 0;
+    final hours = double.tryParse(_hoursCtrl.text.trim()) ?? 0;
+    final category = _category.trim();
+    final narration = _narrationCtrl.text.trim();
+    final labourHead = _labourHeadCtrl.text.trim();
+    final mobile = _mobileCtrl.text.trim();
+    final rent = double.tryParse(_rentCtrl.text.trim()) ?? 0;
+    final food = double.tryParse(_foodCtrl.text.trim()) ?? 0;
+    final bonus = double.tryParse(_bonusCtrl.text.trim()) ?? 0;
+    final kind = _laborEditKindValue(_kindLabel);
+
+    if (name.isEmpty) {
+      setState(() => _error = tr('Name is required'));
+      return;
+    }
+    if (mobile.isNotEmpty && mobile.length != 10) {
+      setState(() => _error = tr('Mobile must be 10 digits'));
+      return;
+    }
+    if (_isTally || _isOpening) {
+      if (narration.isEmpty) {
+        setState(() => _error = tr('Narration is required'));
+        return;
+      }
+      if (_isOpening && wage == 0) {
+        setState(() => _error = tr('Enter payable or payment amount'));
+        return;
+      }
+    } else {
+      if (wage <= 0) {
+        setState(() => _error = tr('Enter valid rate'));
+        return;
+      }
+      if (hours <= 0) {
+        setState(() => _error = tr('Enter valid days/hour'));
+        return;
+      }
+    }
+    if (category.isEmpty) {
+      setState(() => _error = tr('Category is required'));
+      return;
+    }
+    if (_isContract && labourHead.isEmpty) {
+      setState(() => _error = tr('Labour head is required for Contract'));
+      return;
+    }
+
+    FocusManager.instance.primaryFocus?.unfocus();
+    final e = widget.entry;
+    Navigator.pop(context, <String, dynamic>{
+      'name': name,
+      'wage': _isTally ? 0 : wage,
+      'hours': hours > 0 ? hours : 1,
+      'category': category,
+      'narration': narration,
+      'date': DateFormat('yyyy-MM-dd').format(_date),
+      'shift': _shift,
+      'gender': _gender,
+      'work_type': _workType,
+      'labour_head': _isContract ? labourHead : '',
+      'location': _location,
+      'number_of_labours': e['number_of_labours'] ?? 1,
+      'entry_kind': kind,
+      'rent': rent,
+      'food': food,
+      'bonus': bonus,
+      if (mobile.isNotEmpty) 'mobile': mobile,
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shiftItems = _shifts.contains(_shift) ? _shifts : [..._shifts, _shift];
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(tr('Edit labour entry'), style: AppText.h3),
+              SizedBox(height: 12),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: TextField(
-                          controller: wageCtrl,
-                          decoration: InputDecoration(labelText: tr('Wage')),
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                        ),
+                      TextField(
+                        controller: _nameCtrl,
+                        decoration: InputDecoration(labelText: tr('Name')),
                       ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: hoursCtrl,
+                      SizedBox(height: 8),
+                      TextField(
+                        controller: _mobileCtrl,
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(10),
+                        ],
+                        decoration: InputDecoration(labelText: tr('Mobile')),
+                      ),
+                      SizedBox(height: 8),
+                      AppDropdown(
+                        label: 'Type',
+                        value: _kindLabel,
+                        items: _kindLabels,
+                        icon: Icons.swap_vert_rounded,
+                        onChanged: (v) =>
+                            setState(() => _kindLabel = v ?? _kindLabel),
+                      ),
+                      SizedBox(height: 8),
+                      AppDropdown(
+                        label: 'Work Type',
+                        value: _workType,
+                        items: _workTypes,
+                        icon: Icons.work_outline_rounded,
+                        onChanged: (v) =>
+                            setState(() => _workType = v ?? 'Daily Wages'),
+                      ),
+                      if (_isContract) ...[
+                        SizedBox(height: 8),
+                        TextField(
+                          controller: _labourHeadCtrl,
                           decoration:
-                              InputDecoration(labelText: tr('Days / Hour')),
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
+                              InputDecoration(labelText: tr('Labour Head')),
                         ),
+                      ],
+                      SizedBox(height: 8),
+                      AppDropdown(
+                        label: 'Category',
+                        value: _categories.contains(_category) ? _category : null,
+                        items: _categories,
+                        icon: Icons.category_rounded,
+                        onChanged: (v) {
+                          if (v != null) setState(() => _category = v);
+                        },
+                      ),
+                      SizedBox(height: 8),
+                      AppDropdown(
+                        label: 'Shift',
+                        value: shiftItems.contains(_shift) ? _shift : null,
+                        items: shiftItems,
+                        icon: Icons.wb_sunny_rounded,
+                        onChanged: (v) =>
+                            setState(() => _shift = v ?? 'fullday'),
+                      ),
+                      SizedBox(height: 8),
+                      AppDropdown(
+                        label: 'Location',
+                        value: _locations.contains(_location) ? _location : null,
+                        items: _locations,
+                        icon: Icons.location_on_rounded,
+                        onChanged: (v) =>
+                            setState(() => _location = v ?? _location),
+                      ),
+                      SizedBox(height: 8),
+                      AppDropdown(
+                        label: 'Gender',
+                        value: _gender,
+                        items: _genders,
+                        icon: Icons.wc_rounded,
+                        onChanged: (v) =>
+                            setState(() => _gender = v ?? 'Male'),
+                      ),
+                      if (!_isTally) ...[
+                        SizedBox(height: 8),
+                        if (_isOpening)
+                          TextField(
+                            controller: _wageCtrl,
+                            decoration: InputDecoration(
+                              labelText: tr('Amount'),
+                              helperText: tr(
+                                'Positive = payable, negative = payment',
+                              ),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                              signed: true,
+                            ),
+                          )
+                        else
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _wageCtrl,
+                                  decoration:
+                                      InputDecoration(labelText: tr('Wage')),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: TextField(
+                                  controller: _hoursCtrl,
+                                  decoration: InputDecoration(
+                                      labelText: tr('Days / Hour')),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                ),
+                              ),
+                            ],
+                          ),
+                        if (!_isOpening) ...[
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _rentCtrl,
+                                  decoration:
+                                      InputDecoration(labelText: tr('Rent')),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: TextField(
+                                  controller: _foodCtrl,
+                                  decoration:
+                                      InputDecoration(labelText: tr('Food')),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: TextField(
+                                  controller: _bonusCtrl,
+                                  decoration:
+                                      InputDecoration(labelText: tr('Bonus')),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                      SizedBox(height: 8),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.calendar_today_rounded,
+                            color: AppColors.primary),
+                        title: Text(DateFormat('dd/MM/yyyy').format(_date)),
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _date,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime(2101),
+                          );
+                          if (picked != null) setState(() => _date = picked);
+                        },
+                      ),
+                      TextField(
+                        controller: _narrationCtrl,
+                        decoration: InputDecoration(
+                          labelText: (_isTally || _isOpening)
+                              ? tr('Narration')
+                              : tr('Narration (optional)'),
+                        ),
+                        maxLines: 2,
                       ),
                     ],
                   ),
-                  SizedBox(height: 8),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.calendar_today_rounded,
-                        color: AppColors.primary),
-                    title: Text(DateFormat('dd/MM/yyyy').format(date)),
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: ctx,
-                        initialDate: date,
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2101),
-                      );
-                      if (picked != null) setLocal(() => date = picked);
+                ),
+              ),
+              if (_error != null) ...[
+                SizedBox(height: 8),
+                Text(
+                  _error!,
+                  style: const TextStyle(
+                    color: AppColors.expense,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      Navigator.pop(context);
                     },
+                    child: Text(tr('Cancel')),
                   ),
-                  TextField(
-                    controller: narrationCtrl,
-                    decoration:
-                        InputDecoration(labelText: tr('Narration (optional)')),
-                    maxLines: 2,
-                  ),
-                  SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          FocusManager.instance.primaryFocus?.unfocus();
-                          Navigator.pop(ctx, false);
-                        },
-                        child: Text(tr('Cancel')),
-                      ),
-                      FilledButton(
-                        onPressed: () {
-                          FocusManager.instance.primaryFocus?.unfocus();
-                          Navigator.pop(ctx, true);
-                        },
-                        child: Text(tr('Save')),
-                      ),
-                    ],
+                  FilledButton(
+                    onPressed: _save,
+                    child: Text(tr('Save')),
                   ),
                 ],
               ),
-            ),
-          );
-        },
-      );
-    },
-  );
-
-  final name = nameCtrl.text.trim();
-  final wage = double.tryParse(wageCtrl.text.trim());
-  final hours = double.tryParse(hoursCtrl.text.trim());
-  final category = categoryCtrl.text.trim();
-  final narration = narrationCtrl.text.trim();
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    nameCtrl.dispose();
-    wageCtrl.dispose();
-    hoursCtrl.dispose();
-    narrationCtrl.dispose();
-    categoryCtrl.dispose();
-  });
-
-  if (saved != true) return false;
-  if (name.isEmpty || wage == null || hours == null || hours <= 0) {
-    return false;
+            ],
+          ),
+        ),
+      ),
+    );
   }
-
-  final payload = <String, dynamic>{
-    'name': name,
-    'wage': wage,
-    'hours': hours,
-    'category': category.isEmpty ? (entry['category'] ?? '') : category,
-    'narration': narration,
-    'date': DateFormat('yyyy-MM-dd').format(date),
-    'shift': entry['shift'] ?? 'fullday',
-    'gender': entry['gender'] ?? '',
-    'work_type': entry['work_type'] ?? 'Daily Wages',
-    'labour_head': entry['labour_head'] ?? '',
-    'location': entry['location'] ?? '',
-    'number_of_labours': entry['number_of_labours'] ?? 1,
-    if ((entry['mobile']?.toString() ?? '').isNotEmpty)
-      'mobile': entry['mobile'],
-    if ((entry['entry_kind']?.toString() ?? '').isNotEmpty)
-      'entry_kind': entry['entry_kind'],
-  };
-
-  final result = await api.updateLabor(id, payload);
-  return result['success'] == true;
 }

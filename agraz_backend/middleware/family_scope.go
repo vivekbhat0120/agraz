@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	CtxOwnerUserID       = "owner_user_id"
-	CtxIsSubUser         = "is_sub_user"
-	CtxDisabledFeatures  = "disabled_features"
+	CtxOwnerUserID      = "owner_user_id"
+	CtxIsSubUser        = "is_sub_user"
+	CtxDisabledFeatures = "disabled_features"
 )
 
 // FamilyScope attaches the farm owner id (main account) and enforces
@@ -133,6 +133,12 @@ func featureForPath(path string) string {
 		return "labour"
 	case strings.HasPrefix(p, "labor_works"), strings.HasPrefix(p, "labor_shares"):
 		return "labour_work"
+	case strings.HasPrefix(p, "dairy/owner"):
+		return "dairy_owner"
+	case strings.HasPrefix(p, "dairy"):
+		return "dairy"
+	case strings.HasPrefix(p, "daily_summary"):
+		return "daily_summary"
 	case strings.HasPrefix(p, "diary"):
 		return "notes"
 	case strings.HasPrefix(p, "future_plans"):
